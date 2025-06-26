@@ -10,6 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
+import wav from 'wav';
 
 const ChatInputSchema = z.object({
   userInput: z.string().describe('The user input message.'),
@@ -27,7 +29,7 @@ export type ChatInput = z.infer<typeof ChatInputSchema>;
 
 const ChatOutputSchema = z.object({
   aiResponse: z.string().describe('The AI response message.'),
-  audioResponseUri: z.string().describe('The AI spoken response in audio/mpeg format.').optional()
+  audioResponseUri: z.string().describe('The AI spoken response in audio/mpeg or audio/wav format.').optional()
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
@@ -65,6 +67,7 @@ const chatFlow = ai.defineFlow(
 
     let audioResponseUri: string | undefined = undefined;
 
+    // Use ElevenLabs if voice ID and API key are provided
     if (input.clonedVoiceId && input.elevenLabsApiKey) {
       try {
         const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${input.clonedVoiceId}`, {
@@ -91,6 +94,34 @@ const chatFlow = ai.defineFlow(
       } catch (error) {
         console.error("Failed to generate audio from ElevenLabs:", error);
       }
+    } else {
+      // Fallback to Genkit TTS for testing/demo purposes
+      try {
+        const {media} = await ai.generate({
+          model: googleAI.model('gemini-2.5-flash-preview-tts'),
+          config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {voiceName: 'Algenib'}, // A standard, pleasant voice
+              },
+            },
+          },
+          prompt: aiResponse,
+        });
+
+        if (media?.url) {
+          const audioBuffer = Buffer.from(
+            media.url.substring(media.url.indexOf(',') + 1),
+            'base64'
+          );
+          audioResponseUri = 'data:audio/wav;base64,' + (await toWav(audioBuffer));
+        } else {
+            console.error("Genkit TTS error: No media returned");
+        }
+      } catch (error) {
+        console.error("Failed to generate audio from Genkit TTS:", error);
+      }
     }
 
     return {
@@ -99,3 +130,30 @@ const chatFlow = ai.defineFlow(
     };
   }
 );
+
+async function toWav(
+  pcmData: Buffer,
+  channels = 1,
+  rate = 24000,
+  sampleWidth = 2
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const writer = new wav.Writer({
+      channels,
+      sampleRate: rate,
+      bitDepth: sampleWidth * 8,
+    });
+
+    let bufs: any[] = [];
+    writer.on('error', reject);
+    writer.on('data', function (d) {
+      bufs.push(d);
+    });
+    writer.on('end', function () {
+      resolve(Buffer.concat(bufs).toString('base64'));
+    });
+
+    writer.write(pcmData);
+    writer.end();
+  });
+}

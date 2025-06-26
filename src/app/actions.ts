@@ -17,6 +17,10 @@ import {
   cloneVoice,
   type CloneVoiceInput,
 } from "@/ai/flows/voice-cloning";
+import {
+  speechToText,
+  type SpeechToTextInput,
+} from "@/ai/flows/speech-to-text";
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -78,4 +82,16 @@ export async function cloneVoiceAction(input: CloneVoiceInput) {
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(cloneVoice(validation.data));
+}
+
+const speechToTextSchema = z.object({
+  audioDataUri: z.string().min(1, "Audio data cannot be empty."),
+});
+
+export async function speechToTextAction(input: SpeechToTextInput) {
+  const validation = speechToTextSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(speechToText(validation.data));
 }

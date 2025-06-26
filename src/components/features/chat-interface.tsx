@@ -8,14 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Mic, Volume2, User as UserIcon, Loader2 } from 'lucide-react';
+import { Send, Mic, Volume2, User as UserIcon, Loader2, StopCircle } from 'lucide-react';
 
 import { useMemoryStore } from '@/lib/store/memory';
 import { useAvatarStore } from '@/lib/store/avatar';
 import { useVoiceStore } from '@/lib/store/voice';
 import useHydratedStore from '@/hooks/use-hydrated-store';
-import { chatAction } from '@/app/actions';
+import { chatAction, speechToTextAction } from '@/app/actions';
 import { useApiKeyStore } from '@/lib/store/api-keys';
+import { cn } from '@/lib/utils';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -29,11 +30,31 @@ export function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const [hasMicPermission, setHasMicPermission] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const memories = useHydratedStore(useMemoryStore, state => state.memories);
   const avatarUri = useHydratedStore(useAvatarStore, state => state.selectedAvatarUri);
   const voiceId = useHydratedStore(useVoiceStore, state => state.clonedVoiceId);
   const elevenLabsApiKey = useHydratedStore(useApiKeyStore, state => state.elevenLabsApiKey);
+
+  useEffect(() => {
+    // Check for microphone permission on component mount
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        setHasMicPermission(true);
+        // We need to stop the track immediately, we only wanted to ask for permission
+        stream.getTracks().forEach(track => track.stop());
+      })
+      .catch(err => {
+        setHasMicPermission(false);
+        console.error("Mic permission denied:", err);
+      });
+  }, []);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -84,6 +105,74 @@ export function ChatInterface() {
     audio.play().catch(e => console.error("Error playing audio:", e));
   };
 
+  const startRecording = async () => {
+    if (!hasMicPermission) {
+        toast({
+            title: "Microphone permission required",
+            description: "Please allow microphone access in your browser settings.",
+            variant: "destructive"
+        });
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        audioChunksRef.current = [];
+
+        mediaRecorderRef.current.ondataavailable = event => {
+            audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorderRef.current.onstop = async () => {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = async () => {
+                const base64Audio = reader.result as string;
+                setIsTranscribing(true);
+                const result = await speechToTextAction({ audioDataUri: base64Audio });
+                setIsTranscribing(false);
+
+                if (result.success && result.data?.transcript) {
+                    setInput(prev => prev ? `${prev} ${result.data.transcript}` : result.data.transcript);
+                } else {
+                    toast({
+                        title: 'Transcription Failed',
+                        description: result.error as string || "Could not transcribe audio.",
+                        variant: 'destructive',
+                    });
+                }
+            };
+            // Stop all tracks to release microphone
+            stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+    } catch (error) {
+        console.error("Error starting recording:", error);
+        toast({
+            title: "Could not start recording",
+            description: "Please ensure your microphone is connected and permissions are allowed.",
+            variant: "destructive"
+        });
+    }
+  };
+
+  const stopRecording = () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+      }
+  };
+  
+  const handleMicClick = () => {
+    if (isRecording) {
+        stopRecording();
+    } else {
+        startRecording();
+    }
+  };
 
   return (
     <Card className="h-full w-full flex flex-col">
@@ -130,7 +219,7 @@ export function ChatInterface() {
         <div className="border-t p-4">
           <div className="relative">
             <Textarea
-              placeholder="Type your message here..."
+              placeholder={isTranscribing ? "Transcribing..." : (isRecording ? "Recording... Click the mic to stop." : "Type your message here or click the mic to speak...")}
               className="pr-24 min-h-[50px] resize-none"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -140,13 +229,14 @@ export function ChatInterface() {
                   handleSend();
                 }
               }}
+              readOnly={isTranscribing || isRecording}
             />
             <div className="absolute top-1/2 right-3 -translate-y-1/2 flex gap-2">
-               <Button variant="ghost" size="icon" disabled>
-                <Mic className="h-5 w-5" />
-                <span className="sr-only">Use microphone</span>
+               <Button variant="ghost" size="icon" onClick={handleMicClick} disabled={isLoading || isTranscribing} className={cn(isRecording && 'text-red-500 hover:text-red-600')}>
+                {isRecording ? <StopCircle className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                <span className="sr-only">{isRecording ? "Stop recording" : "Use microphone"}</span>
               </Button>
-              <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">
+              <Button onClick={handleSend} disabled={isLoading || isTranscribing || !input.trim()} size="icon">
                 <Send className="h-5 w-5" />
                 <span className="sr-only">Send</span>
               </Button>

@@ -31,12 +31,12 @@ type ApiKeyFormValues = z.infer<typeof formSchema>;
 
 export function AccountForm() {
   const { toast } = useToast();
-  const apiKeys = useHydratedStore(useApiKeyStore, (state) => ({
-    elevenLabsApiKey: state.elevenLabsApiKey,
-    photoroomApiKey: state.photoroomApiKey,
-    sieveApiKey: state.sieveApiKey,
-    falAiApiKey: state.falAiApiKey,
-  }));
+  
+  const elevenLabsApiKey = useHydratedStore(useApiKeyStore, (state) => state.elevenLabsApiKey);
+  const photoroomApiKey = useHydratedStore(useApiKeyStore, (state) => state.photoroomApiKey);
+  const sieveApiKey = useHydratedStore(useApiKeyStore, (state) => state.sieveApiKey);
+  const falAiApiKey = useHydratedStore(useApiKeyStore, (state) => state.falAiApiKey);
+
   const setApiKey = useApiKeyStore((state) => state.setApiKey);
 
   const form = useForm<ApiKeyFormValues>({
@@ -50,10 +50,20 @@ export function AccountForm() {
   });
 
   useEffect(() => {
-    if (apiKeys) {
-      form.reset(apiKeys);
+    if (
+      elevenLabsApiKey !== undefined &&
+      photoroomApiKey !== undefined &&
+      sieveApiKey !== undefined &&
+      falAiApiKey !== undefined
+    ) {
+      form.reset({
+        elevenLabsApiKey: elevenLabsApiKey || '',
+        photoroomApiKey: photoroomApiKey || '',
+        sieveApiKey: sieveApiKey || '',
+        falAiApiKey: falAiApiKey || '',
+      });
     }
-  }, [apiKeys, form]);
+  }, [elevenLabsApiKey, photoroomApiKey, sieveApiKey, falAiApiKey, form]);
 
 
   function onSubmit(data: ApiKeyFormValues) {

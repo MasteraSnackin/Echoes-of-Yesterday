@@ -21,10 +21,18 @@ const fileToDataUri = (file: File): Promise<string> => {
   });
 };
 
+const examplePrompts = [
+    "A professional, compassionate portrait",
+    "A warm, friendly smile, in a watercolor style",
+    "A black and white sketch with a thoughtful expression",
+    "Pop art style with vibrant, bold colors",
+    "A soft, dreamy look with a fantasy background",
+];
+
 export function AvatarGenerator() {
   const [baseImage, setBaseImage] = useState<File | null>(null);
   const [baseImageUri, setBaseImageUri] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState<string>("A professional, compassionate portrait");
+  const [prompt, setPrompt] = useState<string>(examplePrompts[0]);
   const [generatedAvatars, setGeneratedAvatars] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -96,6 +104,18 @@ export function AvatarGenerator() {
             <Label htmlFor="prompt">Style Prompt</Label>
             <Input id="prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
           </div>
+
+          <div className="space-y-2">
+            <Label>Examples</Label>
+            <div className="flex flex-wrap gap-2">
+                {examplePrompts.map((p) => (
+                    <Button key={p} variant="outline" size="sm" onClick={() => setPrompt(p)} className="h-auto text-wrap">
+                        {p}
+                    </Button>
+                ))}
+            </div>
+          </div>
+
           <Button onClick={handleGenerate} disabled={isGenerating || !baseImageUri} className="w-full">
             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
             Generate New Avatar

@@ -23,7 +23,6 @@ import { useEffect } from "react";
 const formSchema = z.object({
   elevenLabsApiKey: z.string().optional(),
   photoroomApiKey: z.string().optional(),
-  sieveApiKey: z.string().optional(),
   falAiApiKey: z.string().optional(),
 });
 
@@ -34,7 +33,6 @@ export function AccountForm() {
   
   const elevenLabsApiKey = useHydratedStore(useApiKeyStore, (state) => state.elevenLabsApiKey);
   const photoroomApiKey = useHydratedStore(useApiKeyStore, (state) => state.photoroomApiKey);
-  const sieveApiKey = useHydratedStore(useApiKeyStore, (state) => state.sieveApiKey);
   const falAiApiKey = useHydratedStore(useApiKeyStore, (state) => state.falAiApiKey);
 
   const setApiKey = useApiKeyStore((state) => state.setApiKey);
@@ -44,7 +42,6 @@ export function AccountForm() {
     defaultValues: {
       elevenLabsApiKey: "",
       photoroomApiKey: "",
-      sieveApiKey: "",
       falAiApiKey: "",
     },
   });
@@ -53,17 +50,15 @@ export function AccountForm() {
     if (
       elevenLabsApiKey !== undefined &&
       photoroomApiKey !== undefined &&
-      sieveApiKey !== undefined &&
       falAiApiKey !== undefined
     ) {
       form.reset({
         elevenLabsApiKey: elevenLabsApiKey || '',
         photoroomApiKey: photoroomApiKey || '',
-        sieveApiKey: sieveApiKey || '',
         falAiApiKey: falAiApiKey || '',
       });
     }
-  }, [elevenLabsApiKey, photoroomApiKey, sieveApiKey, falAiApiKey, form]);
+  }, [elevenLabsApiKey, photoroomApiKey, falAiApiKey, form]);
 
 
   function onSubmit(data: ApiKeyFormValues) {
@@ -115,22 +110,6 @@ export function AccountForm() {
                   </FormControl>
                   <FormDescription>
                     Required for background removal from avatars.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="sieveApiKey"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sieve API Key</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Your Sieve Key" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Required for asking questions about media.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

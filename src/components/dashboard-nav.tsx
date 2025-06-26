@@ -8,7 +8,6 @@ import {
   Mic,
   Image,
   Clapperboard,
-  BotMessageSquare,
   BookHeart,
   Sparkles,
   MessageSquare,
@@ -36,7 +35,6 @@ const generationItems = [
   { href: "/dashboard/voice-cloning", label: "Voice Cloning", icon: Mic },
   { href: "/dashboard/avatar-generation", label: "Avatar Generation", icon: Image },
   { href: "/dashboard/text-to-video", label: "Image Studio", icon: Wand2 },
-  { href: "/dashboard/sieve-ask", label: "Ask Sieve", icon: BotMessageSquare },
 ];
 
 const videoItems = [

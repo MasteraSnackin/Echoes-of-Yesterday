@@ -13,6 +13,10 @@ import {
   chatWithMemory, 
   type ChatInput 
 } from "@/ai/flows/chat-interface";
+import {
+  cloneVoice,
+  type CloneVoiceInput,
+} from "@/ai/flows/voice-cloning";
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -51,6 +55,7 @@ const chatSchema = z.object({
     userAvatarUri: z.string().optional(),
     clonedVoiceId: z.string().optional(),
     integratedMemories: z.string(),
+    elevenLabsApiKey: z.string().optional(),
 });
 
 export async function chatAction(input: ChatInput) {
@@ -59,4 +64,18 @@ export async function chatAction(input: ChatInput) {
         return { success: false, error: validation.error.flatten().fieldErrors };
     }
     return createResponse(chatWithMemory(validation.data));
+}
+
+const voiceSchema = z.object({
+  audioDataUri: z.string().min(1, "Audio data cannot be empty."),
+  fileName: z.string().min(1, "File name cannot be empty."),
+  apiKey: z.string().min(1, "ElevenLabs API key is required."),
+});
+
+export async function cloneVoiceAction(input: CloneVoiceInput) {
+  const validation = voiceSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(cloneVoice(validation.data));
 }

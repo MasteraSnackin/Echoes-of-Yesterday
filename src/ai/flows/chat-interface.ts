@@ -21,12 +21,13 @@ const ChatInputSchema = z.object({
     .optional(),
   clonedVoiceId: z.string().describe('The ID of the cloned voice from ElevenLabs.').optional(),
   integratedMemories: z.string().describe('The integrated memories of the loved one.'),
+  elevenLabsApiKey: z.string().describe('The ElevenLabs API key.').optional(),
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 
 const ChatOutputSchema = z.object({
   aiResponse: z.string().describe('The AI response message.'),
-  audioResponseUri: z.string().describe('The AI spoken response in .wav format.').optional()
+  audioResponseUri: z.string().describe('The AI spoken response in audio/mpeg format.').optional()
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
@@ -37,22 +38,20 @@ export async function chatWithMemory(input: ChatInput): Promise<ChatOutput> {
 const chatPrompt = ai.definePrompt({
   name: 'chatPrompt',
   input: {schema: ChatInputSchema},
-  output: {schema: ChatOutputSchema},
+  output: {schema: z.object({ aiResponse: z.string() })},
   prompt: `You are simulating a conversation with a deceased loved one, using their memories and personality traits.
 
   Here are some memories and personality traits to use as the primary source of information:
   {{{integratedMemories}}}
 
-  {% if userAvatarUri %}
+  {{#if userAvatarUri}}
   Here is the avatar of the person you are impersonating. Use it to guide the conversation and responses.
   {{media url=userAvatarUri}}
-  {% endif %}
+  {{/if}}
 
   User Input: {{{userInput}}}
   AI Response:`, 
 });
-
-import wav from 'wav';
 
 const chatFlow = ai.defineFlow(
   {
@@ -62,65 +61,41 @@ const chatFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await chatPrompt(input);
+    const aiResponse = output?.aiResponse ?? 'I am not sure how to respond to that.';
 
     let audioResponseUri: string | undefined = undefined;
-    if (input.clonedVoiceId) {
-      const ttsResponse = await ai.generate({
-        model: 'googleai/gemini-2.5-flash-preview-tts',
-        config: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {voiceName: 'Algenib'},
+
+    if (input.clonedVoiceId && input.elevenLabsApiKey) {
+      try {
+        const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${input.clonedVoiceId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': input.elevenLabsApiKey,
+                'accept': 'audio/mpeg',
             },
-          },
-        },
-        prompt: output?.aiResponse ?? ''
-      });
+            body: JSON.stringify({
+                text: aiResponse,
+                model_id: 'eleven_multilingual_v2',
+            }),
+        });
 
-      if (ttsResponse.media) {
-        const audioBuffer = Buffer.from(
-            ttsResponse.media.url.substring(ttsResponse.media.url.indexOf(',') + 1),
-            'base64'
-        );
-
-        const wavDataUri = 'data:audio/wav;base64,' + (await toWav(audioBuffer))
-
-        audioResponseUri = wavDataUri;
+        if (ttsResponse.ok) {
+            const audioBuffer = await ttsResponse.arrayBuffer();
+            const base64Audio = Buffer.from(audioBuffer).toString('base64');
+            audioResponseUri = `data:audio/mpeg;base64,${base64Audio}`;
+        } else {
+            const error = await ttsResponse.json();
+            console.error("ElevenLabs TTS error:", error);
+        }
+      } catch (error) {
+        console.error("Failed to generate audio from ElevenLabs:", error);
       }
     }
 
-
     return {
-      aiResponse: output?.aiResponse ?? 'No response generated.',
+      aiResponse: aiResponse,
       audioResponseUri: audioResponseUri
     };
   }
 );
-
-async function toWav(
-    pcmData: Buffer,
-    channels = 1,
-    rate = 24000,
-    sampleWidth = 2
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const writer = new wav.Writer({
-      channels,
-      sampleRate: rate,
-      bitDepth: sampleWidth * 8,
-    });
-
-    let bufs = [] as any[];
-    writer.on('error', reject);
-    writer.on('data', function (d) {
-      bufs.push(d);
-    });
-    writer.on('end', function () {
-      resolve(Buffer.concat(bufs).toString('base64'));
-    });
-
-    writer.write(pcmData);
-    writer.end();
-  });
-}

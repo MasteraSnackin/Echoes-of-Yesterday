@@ -15,6 +15,7 @@ import { useAvatarStore } from '@/lib/store/avatar';
 import { useVoiceStore } from '@/lib/store/voice';
 import useHydratedStore from '@/hooks/use-hydrated-store';
 import { chatAction } from '@/app/actions';
+import { useApiKeyStore } from '@/lib/store/api-keys';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -32,6 +33,7 @@ export function ChatInterface() {
   const memories = useHydratedStore(useMemoryStore, state => state.memories);
   const avatarUri = useHydratedStore(useAvatarStore, state => state.selectedAvatarUri);
   const voiceId = useHydratedStore(useVoiceStore, state => state.clonedVoiceId);
+  const elevenLabsApiKey = useHydratedStore(useApiKeyStore, state => state.elevenLabsApiKey);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -55,6 +57,7 @@ export function ChatInterface() {
       integratedMemories: memories || '',
       userAvatarUri: avatarUri || undefined,
       clonedVoiceId: voiceId || undefined,
+      elevenLabsApiKey: elevenLabsApiKey || undefined,
     });
 
     setIsLoading(false);

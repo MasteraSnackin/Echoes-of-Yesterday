@@ -27,10 +27,15 @@ import {
 } from "@/ai/flows/text-to-speech";
 import {
   submitAiAvatarRequest,
-  type SubmitAiAvatarRequestInput,
   getAiAvatarRequestStatus,
-  type GetAiAvatarRequestStatusInput,
 } from "@/ai/flows/ai-avatar";
+import type { SubmitAiAvatarRequestInput, GetAiAvatarRequestStatusInput } from "@/ai/flows/ai-avatar";
+import {
+  submitAudioToVideoRequest,
+  getAudioToVideoRequestStatus,
+  type SubmitAudioToVideoRequestInput,
+  type GetAudioToVideoRequestStatusInput,
+} from "@/ai/flows/audio-to-video";
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -150,4 +155,31 @@ export async function getAiAvatarRequestStatusAction(input: GetAiAvatarRequestSt
         return { success: false, error: validation.error.flatten().fieldErrors };
     }
     return createResponse(getAiAvatarRequestStatus(validation.data));
+}
+
+const submitAudioToVideoSchema = z.object({
+  avatarId: z.string().min(1, "Avatar ID is required."),
+  audioUrl: z.string().min(1, "Audio URL is required."),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+});
+
+export async function submitAudioToVideoRequestAction(input: SubmitAudioToVideoRequestInput) {
+  const validation = submitAudioToVideoSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(submitAudioToVideoRequest(validation.data));
+}
+
+const getAudioToVideoStatusSchema = z.object({
+  requestId: z.string().min(1, "Request ID is required."),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+});
+
+export async function getAudioToVideoRequestStatusAction(input: GetAudioToVideoRequestStatusInput) {
+  const validation = getAudioToVideoStatusSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(getAudioToVideoRequestStatus(validation.data));
 }

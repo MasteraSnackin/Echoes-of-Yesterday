@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -13,7 +14,6 @@ import useHydratedStore from '@/hooks/use-hydrated-store';
 import { useApiKeyStore } from '@/lib/store/api-keys';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from '../ui/scroll-area';
@@ -149,7 +149,7 @@ export function ImageTo3dForm() {
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Input</CardTitle>
-          <CardDescription>Upload an image to generate a 3D model. Adjust settings for more control.</CardDescription>
+          <CardDescription>Upload an image and adjust settings to generate a 3D model.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!apiKey && (
@@ -172,25 +172,53 @@ export function ImageTo3dForm() {
           
           <Collapsible>
             <CollapsibleTrigger asChild>
-                <Button variant="link" className="p-0 flex items-center gap-1">
+                <Button variant="link" className="p-0 flex items-center gap-1 text-sm">
+                    Additional Settings
                     <ChevronDown className="h-4 w-4" />
-                    Advanced settings
                 </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-6 pt-4">
-                <div className="space-y-2">
-                    <Label>Style</Label>
-                    <Select value={style} onValueChange={setStyle} disabled={isGenerating || !apiKey}>
-                        <SelectTrigger><SelectValue placeholder="Select style..." /></SelectTrigger>
-                        <SelectContent>{styles.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}</SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label>Texture</Label>
-                    <Select value={texture} onValueChange={setTexture} disabled={isGenerating || !apiKey}>
-                        <SelectTrigger><SelectValue placeholder="Select texture..." /></SelectTrigger>
-                        <SelectContent>{textures.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}</SelectContent>
-                    </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Style</Label>
+                        <Select value={style} onValueChange={setStyle} disabled={isGenerating || !apiKey}>
+                            <SelectTrigger><SelectValue placeholder="Select style..." /></SelectTrigger>
+                            <SelectContent>{styles.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Texture</Label>
+                        <Select value={texture} onValueChange={setTexture} disabled={isGenerating || !apiKey}>
+                            <SelectTrigger><SelectValue placeholder="Select texture..." /></SelectTrigger>
+                            <SelectContent>{textures.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Texture Alignment</Label>
+                        <Select value={textureAlignment} onValueChange={setTextureAlignment} disabled={isGenerating || !apiKey}>
+                            <SelectTrigger><SelectValue placeholder="Select texture alignment..." /></SelectTrigger>
+                            <SelectContent>{textureAlignments.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Orientation</Label>
+                        <Select value={orientation} onValueChange={setOrientation} disabled={isGenerating || !apiKey}>
+                            <SelectTrigger><SelectValue placeholder="Select orientation..." /></SelectTrigger>
+                            <SelectContent>{orientations.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Face Limit</Label>
+                        <Input type="number" value={faceLimit} onChange={(e) => setFaceLimit(e.target.value ? Number(e.target.value) : undefined)} placeholder="e.g. 10000" disabled={isGenerating || !apiKey} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Seed</Label>
+                        <Input type="number" value={seed} onChange={(e) => setSeed(e.target.value ? Number(e.target.value) : undefined)} placeholder="Random" disabled={isGenerating || !apiKey} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Texture Seed</Label>
+                        <Input type="number" value={textureSeed} onChange={(e) => setTextureSeed(e.target.value ? Number(e.target.value) : undefined)} placeholder="Random" disabled={isGenerating || !apiKey} />
+                    </div>
                 </div>
                  <div className="flex items-center space-x-2"><Switch id="pbr" checked={pbr} onCheckedChange={setPbr} disabled={isGenerating || !apiKey} /><Label htmlFor="pbr">PBR</Label></div>
                  <div className="flex items-center space-x-2"><Switch id="auto_size" checked={autoSize} onCheckedChange={setAutoSize} disabled={isGenerating || !apiKey} /><Label htmlFor="auto_size">Auto Size</Label></div>
@@ -208,7 +236,7 @@ export function ImageTo3dForm() {
       </Card>
       <Card className="flex flex-col">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Output</CardTitle>
+          <CardTitle className="font-headline text-2xl">Result</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center bg-muted/50 rounded-lg p-2 gap-4">
           {isGenerating ? (
@@ -252,3 +280,6 @@ export function ImageTo3dForm() {
     </div>
   );
 }
+
+
+    

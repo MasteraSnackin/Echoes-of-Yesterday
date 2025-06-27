@@ -1,5 +1,5 @@
 import { DashboardHeader } from "@/components/dashboard-header";
-import { TextToVideoKlingForm } from "@/components/features/text-to-video-kling-form";
+import { PlaceholderPage } from "@/components/placeholder-page";
 
 export default function TextToVideoKlingPage() {
   return (
@@ -8,8 +8,11 @@ export default function TextToVideoKlingPage() {
         title="Text to Video (Kling)"
         description="Generate a short video from a text prompt using the Fal.ai Kling API."
       />
-      <main className="flex-1 p-6">
-        <TextToVideoKlingForm />
+      <main className="flex-1">
+        <PlaceholderPage 
+          title="Feature Removed"
+          description="This feature has been removed."
+        />
       </main>
     </>
   );

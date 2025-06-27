@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useApiKeyStore } from '@/lib/store/api-keys';
 import { useVoiceStore } from '@/lib/store/voice';
@@ -26,6 +26,7 @@ const fileToDataUri = (file: File): Promise<string> => {
 
 export function VoiceCloner() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
   const [isCloning, setIsCloning] = useState(false);
   const { toast } = useToast();
 
@@ -37,6 +38,15 @@ export function VoiceCloner() {
   const [isTesting, setIsTesting] = useState(false);
   const [testAudioUri, setTestAudioUri] = useState<string | null>(null);
 
+  useEffect(() => {
+    // Revoke the object URL to avoid memory leaks
+    return () => {
+      if (audioPreviewUrl) {
+        URL.revokeObjectURL(audioPreviewUrl);
+      }
+    };
+  }, [audioPreviewUrl]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -46,9 +56,15 @@ export function VoiceCloner() {
           description: "Please upload an audio file smaller than 10MB.",
           variant: "destructive"
         });
+        setAudioFile(null);
+        setAudioPreviewUrl(null);
         return;
       }
       setAudioFile(file);
+      setAudioPreviewUrl(URL.createObjectURL(file));
+    } else {
+        setAudioFile(null);
+        setAudioPreviewUrl(null);
     }
   };
 
@@ -156,6 +172,15 @@ export function VoiceCloner() {
           <Input id="audio-upload" type="file" accept="audio/mpeg,audio/wav" onChange={handleFileChange} disabled={!apiKey || isCloning}/>
           {audioFile && <p className="text-sm text-muted-foreground">Selected: {audioFile.name}</p>}
         </div>
+
+        {audioPreviewUrl && (
+            <div className="space-y-2">
+                <Label>Playback Uploaded File</Label>
+                <audio controls src={audioPreviewUrl} className="w-full">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        )}
 
         {hydratedVoiceId && (
             <div className="space-y-4 pt-6 mt-6 border-t">

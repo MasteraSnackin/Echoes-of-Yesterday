@@ -44,8 +44,7 @@ const aiAvatarFlow = ai.defineFlow(
     outputSchema: AiAvatarOutputSchema,
   },
   async input => {
-    const { apiKey, ...body } = input;
-    const { imageUrl, audioUrl, prompt } = body;
+    const { apiKey, imageUrl, audioUrl, prompt } = input;
 
     // 1. Submit the request to the queue
     const queueResponse = await fetch('https://queue.fal.run/fal-ai/ai-avatar', {
@@ -82,7 +81,10 @@ const aiAvatarFlow = ai.defineFlow(
             headers: { 'Authorization': `Key ${apiKey}` }
         });
 
-        if (!statusCheck.ok) continue; // Retry if status check fails
+        if (!statusCheck.ok) {
+            console.error(`Status check failed with status: ${statusCheck.status}`);
+            continue; // Retry if status check fails
+        }
 
         const statusResult = await statusCheck.json();
         
@@ -105,9 +107,15 @@ const aiAvatarFlow = ai.defineFlow(
             return { videoUrl: finalResult.video.url };
         } else if (statusResult.status === 'IN_PROGRESS' || statusResult.status === 'IN_QUEUE') {
             // Continue polling
+        } else if (statusResult.status === 'FAILED') {
+            const resultResponse = await fetch(resultUrl, {
+                headers: { 'Authorization': `Key ${apiKey}` }
+            });
+            const errorResult = await resultResponse.json();
+            throw new Error(`Video generation failed. Reason: ${errorResult?.detail || JSON.stringify(errorResult)}`);
         } else {
             // Handle error states like FAILED, etc.
-            throw new Error(`Video generation failed with status: ${statusResult.status}. Logs: ${JSON.stringify(statusResult.logs)}`);
+            throw new Error(`Video generation in unknown state: ${statusResult.status}. Logs: ${JSON.stringify(statusResult.logs)}`);
         }
     }
 

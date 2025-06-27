@@ -7,7 +7,7 @@
  * - ImageToVideoOutput - The return type for the imageToVideo function.
  */
 // Use require for robust module loading in Next.js server environment
-const fal = require('@fal-ai/serverless-client');
+const { withCredentials } = require('@fal-ai/serverless-client');
 import { z } from 'zod';
 
 const ImageToVideoInputSchema = z.object({
@@ -25,8 +25,8 @@ export type ImageToVideoOutput = z.infer<typeof ImageToVideoOutputSchema>;
 // Note: this is not a Genkit flow.
 export async function imageToVideo(input: ImageToVideoInput): Promise<ImageToVideoOutput> {
   try {
-    const falWithCreds = fal.withCredentials(input.apiKey);
-    const result: any = await falWithCreds.subscribe('fal-ai/kling-video/v2.1/master/image-to-video', {
+    const fal = withCredentials(input.apiKey);
+    const result: any = await fal.subscribe('fal-ai/kling-video/v2.1/master/image-to-video', {
         input: {
           image_url: input.imageUrl,
           prompt: input.prompt,

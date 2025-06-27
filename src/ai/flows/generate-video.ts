@@ -7,7 +7,7 @@
  * - GenerateVideoOutput - The return type for the generateVideo function.
  */
 // Use require for robust module loading in Next.js server environment
-const fal = require('@fal-ai/serverless-client');
+const { withCredentials } = require('@fal-ai/serverless-client');
 import { z } from 'zod';
 
 const GenerateVideoInputSchema = z.object({
@@ -24,8 +24,8 @@ export type GenerateVideoOutput = z.infer<typeof GenerateVideoOutputSchema>;
 // Note: this is not a Genkit flow.
 export async function generateVideo(input: GenerateVideoInput): Promise<GenerateVideoOutput> {
   try {
-    const falWithCreds = fal.withCredentials(input.apiKey);
-    const result: any = await falWithCreds.subscribe('fal-ai/veo3', {
+    const fal = withCredentials(input.apiKey);
+    const result: any = await fal.subscribe('fal-ai/veo3', {
         input: {
           prompt: input.prompt,
         },

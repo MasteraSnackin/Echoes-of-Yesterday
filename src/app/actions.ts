@@ -21,6 +21,10 @@ import {
   speechToText,
   type SpeechToTextInput,
 } from "@/ai/flows/speech-to-text";
+import {
+  textToSpeech,
+  type TextToSpeechInput,
+} from "@/ai/flows/text-to-speech";
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -94,4 +98,18 @@ export async function speechToTextAction(input: SpeechToTextInput) {
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(speechToText(validation.data));
+}
+
+const ttsSchema = z.object({
+  text: z.string().min(1, "Text cannot be empty."),
+  voiceId: z.string().min(1, "Voice ID is required."),
+  apiKey: z.string().min(1, "ElevenLabs API key is required."),
+});
+
+export async function textToSpeechAction(input: TextToSpeechInput) {
+  const validation = ttsSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(textToSpeech(validation.data));
 }

@@ -60,12 +60,12 @@ export function AvatarGenerator() {
     }
 
     setIsGenerating(true);
-    const result = await generateImageAction({ prompt, avatarDataUri: baseImageUri });
+    const result = await generateImageAction({ prompt, avatarDataUri: baseImageUri, count: 5 });
     setIsGenerating(false);
 
-    if (result.success && result.data?.imageDataUri) {
-      setGeneratedAvatars(prev => [...prev, result.data.imageDataUri]);
-      toast({ title: "Avatar generated successfully!" });
+    if (result.success && result.data?.imageDataUris) {
+      setGeneratedAvatars(prev => [...result.data.imageDataUris, ...prev]);
+      toast({ title: "Avatars generated successfully!" });
     } else {
       toast({ title: "Error generating avatar", description: result.error, variant: "destructive" });
     }
@@ -118,7 +118,7 @@ export function AvatarGenerator() {
 
           <Button onClick={handleGenerate} disabled={isGenerating || !baseImageUri} className="w-full">
             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Generate New Avatar
+            Generate 5 New Avatars
           </Button>
           
           {generatedAvatars.length > 0 && (

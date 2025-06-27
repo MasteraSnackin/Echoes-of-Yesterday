@@ -48,6 +48,7 @@ export async function saveMemoriesAction(input: MemoryIntegrationInput) {
 const imageSchema = z.object({
   prompt: z.string().min(1, "Prompt cannot be empty."),
   avatarDataUri: z.string().optional(),
+  count: z.number().optional(),
 });
 
 export async function generateImageAction(input: GenerateImageInput) {

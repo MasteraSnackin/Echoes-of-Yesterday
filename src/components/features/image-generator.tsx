@@ -44,8 +44,8 @@ export function ImageGenerator() {
     });
     setIsGenerating(false);
 
-    if (result.success && result.data?.imageDataUri) {
-      setGeneratedImage(result.data.imageDataUri);
+    if (result.success && result.data?.imageDataUris && result.data.imageDataUris.length > 0) {
+      setGeneratedImage(result.data.imageDataUris[0]);
       toast({ title: 'Image generated successfully!' });
     } else {
       toast({ title: 'Error generating image', description: result.error, variant: 'destructive' });

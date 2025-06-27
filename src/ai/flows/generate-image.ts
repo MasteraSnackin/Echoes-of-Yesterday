@@ -17,33 +17,20 @@ const GenerateImageInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      'The data URI of the avatar image to use as a base, must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.' // Corrected description
+      'The data URI of the avatar image to use as a base, must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.'
     ),
+  count: z.number().optional().default(1).describe('The number of images to generate.'),
 });
 export type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 
 const GenerateImageOutputSchema = z.object({
-  imageDataUri: z.string().describe('The data URI of the generated image.'),
+  imageDataUris: z.array(z.string()).describe('The data URIs of the generated images.'),
 });
 export type GenerateImageOutput = z.infer<typeof GenerateImageOutputSchema>;
 
 export async function generateImage(input: GenerateImageInput): Promise<GenerateImageOutput> {
   return generateImageFlow(input);
 }
-
-const generateImagePrompt = ai.definePrompt({
-  name: 'generateImagePrompt',
-  input: {schema: GenerateImageInputSchema},
-  output: {schema: GenerateImageOutputSchema},
-  prompt: `Generate an image based on the following prompt:
-
-  {{prompt}}
-
-  {{#if avatarDataUri}}
-  Use the following avatar as a base image:
-  {{media url=avatarDataUri}}
-  {{/if}}`,
-});
 
 const generateImageFlow = ai.defineFlow(
   {
@@ -55,16 +42,12 @@ const generateImageFlow = ai.defineFlow(
     const {
       prompt,
       avatarDataUri,
+      count,
     } = input;
 
     const hasAvatar = avatarDataUri != null && avatarDataUri !== '';
 
-    const promptInput = {
-      prompt: prompt,
-      ...(hasAvatar ? {avatarDataUri: avatarDataUri} : {}),
-    };
-
-    const {media} = await ai.generate({
+    const response = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
       prompt: hasAvatar
         ? [
@@ -74,9 +57,19 @@ const generateImageFlow = ai.defineFlow(
         : prompt,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
+        candidates: count,
       },
     });
+    
+    const imageDataUris = (response.candidates ?? [])
+        .map(candidate => candidate.output?.media?.url)
+        .filter((url): url is string => !!url);
 
-    return {imageDataUri: media!.url!};
+    // Fallback for single image generation if candidates array is empty
+    if (imageDataUris.length === 0 && response.media?.url) {
+        imageDataUris.push(response.media.url);
+    }
+
+    return { imageDataUris };
   }
 );

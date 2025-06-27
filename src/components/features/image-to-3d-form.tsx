@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { submitImageTo3dRequestAction, getImageTo3dRequestStatusAction } from '@/app/actions';
-import { Loader2, Sparkles, AlertTriangle, ChevronDown, Download, Cube } from 'lucide-react';
+import { Loader2, Sparkles, AlertTriangle, ChevronDown, Download, Box } from 'lucide-react';
 import useHydratedStore from '@/hooks/use-hydrated-store';
 import { useApiKeyStore } from '@/lib/store/api-keys';
 import Link from 'next/link';
@@ -213,7 +213,7 @@ export function ImageTo3dForm() {
         <CardContent className="flex-1 flex flex-col items-center justify-center bg-muted/50 rounded-lg p-2 gap-4">
           {isGenerating ? (
             <div className="text-center text-muted-foreground">
-                <Cube className="mx-auto h-12 w-12 animate-pulse" />
+                <Box className="mx-auto h-12 w-12 animate-pulse" />
                 <p className="mt-2 font-semibold">{isPolling ? 'Generating Model...' : 'Submitting Job...'}</p>
                 <p className="text-sm">This may take a few minutes. Logs will appear below.</p>
             </div>
@@ -227,7 +227,7 @@ export function ImageTo3dForm() {
             </>
           ) : (
             <div className="text-center text-muted-foreground">
-              <Cube className="mx-auto h-12 w-12" />
+              <Box className="mx-auto h-12 w-12" />
               <p>Your generated 3D model will appear here.</p>
             </div>
           )}

@@ -13,7 +13,7 @@ import {
   Wand2,
   Video,
   PersonStanding,
-  Cube,
+  Box,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ const generationItems = [
   { href: "/dashboard/text-to-video", label: "Image Studio", icon: Wand2 },
   { href: "/dashboard/video-avatar", label: "Video Avatar", icon: Video },
   { href: "/dashboard/audio-to-video", label: "Audio to Video", icon: PersonStanding },
-  { href: "/dashboard/image-to-3d", label: "Image to 3D", icon: Cube },
+  { href: "/dashboard/image-to-3d", label: "Image to 3D", icon: Box },
 ];
 
 export function DashboardNav() {

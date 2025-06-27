@@ -7,12 +7,10 @@ import {
   User,
   Mic,
   Image,
-  Clapperboard,
   BookHeart,
   Sparkles,
   MessageSquare,
   Wand2,
-  Video
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -36,12 +34,6 @@ const generationItems = [
   { href: "/dashboard/avatar-generation", label: "Avatar Generation", icon: Image },
   { href: "/dashboard/text-to-video", label: "Image Studio", icon: Wand2 },
 ];
-
-const videoItems = [
-    { href: "/dashboard/text-to-video-kling", label: "Text to Video (Kling)", icon: Video },
-    { href: "/dashboard/avatar-to-video", label: "Avatar to Video", icon: Video },
-    { href: "/dashboard/text-to-video-google", label: "Text to Video (Google)", icon: Video },
-]
 
 export function DashboardNav() {
   const pathname = usePathname();
@@ -73,28 +65,6 @@ export function DashboardNav() {
         </SidebarGroupLabel>
         <SidebarMenu>
           {generationItems.map((item) => (
-             <SidebarMenuItem key={item.label}>
-             <Link href={item.href} className="block w-full">
-               <SidebarMenuButton
-                 isActive={pathname === item.href}
-                 tooltip={item.label}
-               >
-                 <item.icon />
-                 <span>{item.label}</span>
-               </SidebarMenuButton>
-             </Link>
-           </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroup>
-
-      <SidebarGroup>
-        <SidebarGroupLabel className="flex items-center gap-2">
-            <Clapperboard className="size-4" />
-            <span>Video Tools</span>
-        </SidebarGroupLabel>
-        <SidebarMenu>
-          {videoItems.map((item) => (
              <SidebarMenuItem key={item.label}>
              <Link href={item.href} className="block w-full">
                <SidebarMenuButton

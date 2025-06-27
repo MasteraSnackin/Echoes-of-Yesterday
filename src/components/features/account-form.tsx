@@ -23,7 +23,6 @@ import { useEffect } from "react";
 const formSchema = z.object({
   elevenLabsApiKey: z.string().optional(),
   photoroomApiKey: z.string().optional(),
-  falAiApiKey: z.string().optional(),
 });
 
 type ApiKeyFormValues = z.infer<typeof formSchema>;
@@ -33,7 +32,6 @@ export function AccountForm() {
   
   const elevenLabsApiKey = useHydratedStore(useApiKeyStore, (state) => state.elevenLabsApiKey);
   const photoroomApiKey = useHydratedStore(useApiKeyStore, (state) => state.photoroomApiKey);
-  const falAiApiKey = useHydratedStore(useApiKeyStore, (state) => state.falAiApiKey);
 
   const setApiKey = useApiKeyStore((state) => state.setApiKey);
 
@@ -42,23 +40,20 @@ export function AccountForm() {
     defaultValues: {
       elevenLabsApiKey: "",
       photoroomApiKey: "",
-      falAiApiKey: "",
     },
   });
 
   useEffect(() => {
     if (
       elevenLabsApiKey !== undefined &&
-      photoroomApiKey !== undefined &&
-      falAiApiKey !== undefined
+      photoroomApiKey !== undefined
     ) {
       form.reset({
         elevenLabsApiKey: elevenLabsApiKey || '',
         photoroomApiKey: photoroomApiKey || '',
-        falAiApiKey: falAiApiKey || '',
       });
     }
-  }, [elevenLabsApiKey, photoroomApiKey, falAiApiKey, form]);
+  }, [elevenLabsApiKey, photoroomApiKey, form]);
 
 
   function onSubmit(data: ApiKeyFormValues) {
@@ -110,22 +105,6 @@ export function AccountForm() {
                   </FormControl>
                   <FormDescription>
                     Required for background removal from avatars.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="falAiApiKey"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fal.ai API Key</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Your Fal.ai Key" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Required for video generation features.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

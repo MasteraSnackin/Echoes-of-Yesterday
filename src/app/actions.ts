@@ -25,14 +25,6 @@ import {
   textToSpeech,
   type TextToSpeechInput,
 } from "@/ai/flows/text-to-speech";
-import {
-  textToVideoKling,
-  type TextToVideoKlingInput,
-} from "@/ai/flows/text-to-video-kling";
-import {
-  avatarToVideo,
-  type AvatarToVideoInput,
-} from "@/ai/flows/avatar-to-video";
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -121,30 +113,4 @@ export async function textToSpeechAction(input: TextToSpeechInput) {
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(textToSpeech(validation.data));
-}
-
-const klingVideoSchema = z.object({
-  prompt: z.string().min(1, "Prompt cannot be empty."),
-  apiKey: z.string().min(1, "Fal.ai API key is required."),
-});
-
-export async function klingVideoAction(input: TextToVideoKlingInput) {
-  const validation = klingVideoSchema.safeParse(input);
-  if (!validation.success) {
-    return { success: false, error: validation.error.flatten().fieldErrors };
-  }
-  return createResponse(textToVideoKling(validation.data));
-}
-
-const avatarToVideoSchema = z.object({
-  avatarDataUri: z.string().min(1, "Avatar image is required."),
-  apiKey: z.string().min(1, "Fal.ai API key is required."),
-});
-
-export async function avatarToVideoAction(input: AvatarToVideoInput) {
-  const validation = avatarToVideoSchema.safeParse(input);
-  if (!validation.success) {
-    return { success: false, error: validation.error.flatten().fieldErrors };
-  }
-  return createResponse(avatarToVideo(validation.data));
 }

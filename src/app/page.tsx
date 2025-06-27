@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { AppLogo } from '@/components/icons';
-import { MessageSquare, Clapperboard, Image, Mic } from 'lucide-react';
+import { MessageSquare, Image, Mic } from 'lucide-react';
 
 const features = [
   {
@@ -19,11 +19,6 @@ const features = [
     icon: <Image className="h-8 w-8 text-primary" />,
     title: 'Living Avatars',
     description: 'Create a dynamic, visual representation from a single photograph.',
-  },
-  {
-    icon: <Clapperboard className="h-8 w-8 text-primary" />,
-    title: 'Visual Stories',
-    description: 'Generate images and videos that bring cherished memories to life.',
   },
 ];
 
@@ -91,7 +86,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-2 xl:grid-cols-4 mt-12">
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-3 mt-12">
               {features.map((feature, index) => (
                 <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
                   <CardHeader className="flex flex-col items-center text-center">

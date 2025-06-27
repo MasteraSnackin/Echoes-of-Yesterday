@@ -29,6 +29,10 @@ import {
   generateVideo,
   type GenerateVideoInput,
 } from "@/ai/flows/generate-video";
+import {
+  imageToVideo,
+  type ImageToVideoInput,
+} from "@/ai/flows/image-to-video";
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -130,4 +134,18 @@ export async function generateVideoAction(input: GenerateVideoInput) {
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(generateVideo(validation.data));
+}
+
+const imageToVideoSchema = z.object({
+  imageUrl: z.string().min(1, "Image URL cannot be empty."),
+  prompt: z.string().optional(),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+});
+
+export async function imageToVideoAction(input: ImageToVideoInput) {
+  const validation = imageToVideoSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(imageToVideo(validation.data));
 }

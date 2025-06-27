@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Wand2,
   Video,
+  Film,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ const generationItems = [
   { href: "/dashboard/avatar-generation", label: "Avatar Generation", icon: Image },
   { href: "/dashboard/text-to-video", label: "Image Studio", icon: Wand2 },
   { href: "/dashboard/text-to-video-google", label: "Text to Video", icon: Video },
+  { href: "/dashboard/image-to-video", label: "Image to Video", icon: Film },
 ];
 
 export function DashboardNav() {

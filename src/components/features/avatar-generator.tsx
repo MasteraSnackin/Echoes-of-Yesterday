@@ -63,11 +63,11 @@ export function AvatarGenerator() {
     const result = await generateImageAction({ prompt, avatarDataUri: baseImageUri, count: 5 });
     setIsGenerating(false);
 
-    if (result.success && result.data?.imageDataUris) {
+    if (result.success && result.data?.imageDataUris && result.data.imageDataUris.length > 0) {
       setGeneratedAvatars(prev => [...result.data.imageDataUris, ...prev]);
-      toast({ title: "Avatars generated successfully!" });
+      toast({ title: "5 new avatars generated successfully!" });
     } else {
-      toast({ title: "Error generating avatar", description: result.error, variant: "destructive" });
+      toast({ title: "Error generating avatar", description: result.error as string, variant: "destructive" });
     }
   };
 

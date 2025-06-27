@@ -26,14 +26,6 @@ import {
   type TextToSpeechInput,
 } from "@/ai/flows/text-to-speech";
 import {
-  generateVideo,
-  type GenerateVideoInput,
-} from "@/ai/flows/generate-video";
-import {
-  imageToVideoMinimax,
-  type ImageToVideoMinimaxInput,
-} from "@/ai/flows/image-to-video-minimax";
-import {
   generateAiAvatarVideo,
   type GenerateAiAvatarVideoInput,
 } from "@/ai/flows/ai-avatar-multi";
@@ -126,34 +118,6 @@ export async function textToSpeechAction(input: TextToSpeechInput) {
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(textToSpeech(validation.data));
-}
-
-
-const videoSchema = z.object({
-  prompt: z.string().min(1, "Prompt cannot be empty."),
-  apiKey: z.string().min(1, "Fal.ai API key is required."),
-});
-
-export async function generateVideoAction(input: GenerateVideoInput) {
-  const validation = videoSchema.safeParse(input);
-  if (!validation.success) {
-    return { success: false, error: validation.error.flatten().fieldErrors };
-  }
-  return createResponse(generateVideo(validation.data));
-}
-
-const imageToVideoMinimaxSchema = z.object({
-  imageUrl: z.string().min(1, "Image URL cannot be empty."),
-  prompt: z.string().optional(),
-  apiKey: z.string().min(1, "Fal.ai API key is required."),
-});
-
-export async function imageToVideoMinimaxAction(input: ImageToVideoMinimaxInput) {
-  const validation = imageToVideoMinimaxSchema.safeParse(input);
-  if (!validation.success) {
-    return { success: false, error: validation.error.flatten().fieldErrors };
-  }
-  return createResponse(imageToVideoMinimax(validation.data));
 }
 
 const aiAvatarSchema = z.object({

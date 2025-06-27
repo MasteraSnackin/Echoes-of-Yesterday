@@ -7,8 +7,6 @@ import '@/ai/flows/chat-interface.ts';
 import '@/ai/flows/voice-cloning.ts';
 import '@/ai/flows/speech-to-text.ts';
 import '@/ai/flows/text-to-speech.ts';
-import '@/ai/flows/image-to-video-minimax.ts';
-import '@/ai/flows/generate-video.ts';
 import '@/ai/flows/ai-avatar-multi.ts';
 // import '@/ai/flows/image-to-video.ts';
 // import '@/ai/flows/image-to-video-pixverse.ts';

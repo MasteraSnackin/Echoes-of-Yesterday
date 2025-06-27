@@ -1,55 +1,70 @@
 'use server';
 /**
- * @fileOverview A flow for generating a video avatar from an image and audio using the fal.ai/ai-avatar API.
+ * @fileOverview This file contains flows for submitting and monitoring AI Avatar video generation jobs with Fal.ai.
  *
- * - generateAiAvatar - Generates a video from an image, audio, and prompt.
- * - AiAvatarInput - The input type for the generateAiAvatar function.
- * - AiAvatarOutput - The return type for the generateAiAvatar function.
+ * - submitAiAvatarRequest - Submits a job to the queue and returns a request ID.
+ * - getAiAvatarRequestStatus - Checks the status of a job given a request ID.
+ * - SubmitAiAvatarRequestInput - Input for submitting a job.
+ * - GetAiAvatarRequestStatusInput - Input for checking job status.
+ * - GetAiAvatarRequestStatusOutput - Output for job status check.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const AiAvatarInputSchema = z.object({
-  imageUrl: z
-    .string()
-    .describe(
-      "The source image as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-  audioUrl: z
-    .string()
-    .describe(
-      "The source audio as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-  prompt: z.string().describe('The text prompt to guide video generation.'),
-  apiKey: z.string().describe('The Fal.ai API key.'),
-  num_frames: z.number().optional().describe('Number of frames to generate.'),
-  seed: z.number().optional().describe('Random seed for reproducibility.'),
-  turbo: z.boolean().optional().describe('Whether to use turbo mode.'),
+// Schemas for submitting a request
+export const SubmitAiAvatarRequestInputSchema = z.object({
+  imageUrl: z.string().min(1,"Image URL is required."),
+  audioUrl: z.string().min(1, "Audio URL is required."),
+  prompt: z.string().min(1, "Prompt is required."),
+  apiKey: z.string().min(1, "API Key is required."),
+  num_frames: z.number().optional(),
+  seed: z.number().optional(),
+  turbo: z.boolean().optional(),
 });
-export type AiAvatarInput = z.infer<typeof AiAvatarInputSchema>;
+export type SubmitAiAvatarRequestInput = z.infer<typeof SubmitAiAvatarRequestInputSchema>;
 
-const AiAvatarOutputSchema = z.object({
-  videoUrl: z.string().describe('The URL of the generated video.'),
-  logs: z.array(z.string()).optional().describe('The generation logs.'),
+const SubmitAiAvatarRequestOutputSchema = z.object({
+  requestId: z.string(),
 });
-export type AiAvatarOutput = z.infer<typeof AiAvatarOutputSchema>;
+export type SubmitAiAvatarRequestOutput = z.infer<typeof SubmitAiAvatarRequestOutputSchema>;
 
-export async function generateAiAvatar(input: AiAvatarInput): Promise<AiAvatarOutput> {
-  return aiAvatarFlow(input);
+
+// Schemas for checking status
+export const GetAiAvatarRequestStatusInputSchema = z.object({
+  requestId: z.string(),
+  apiKey: z.string(),
+});
+export type GetAiAvatarRequestStatusInput = z.infer<typeof GetAiAvatarRequestStatusInputSchema>;
+
+export const GetAiAvatarRequestStatusOutputSchema = z.object({
+  status: z.enum(['IN_QUEUE', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'UNKNOWN']),
+  videoUrl: z.string().optional().nullable(),
+  logs: z.array(z.string()).optional(),
+  error: z.string().optional().nullable(),
+});
+export type GetAiAvatarRequestStatusOutput = z.infer<typeof GetAiAvatarRequestStatusOutputSchema>;
+
+
+// Wrapper functions to be called by server actions
+export async function submitAiAvatarRequest(input: SubmitAiAvatarRequestInput): Promise<SubmitAiAvatarRequestOutput> {
+  return submitAiAvatarRequestFlow(input);
 }
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export async function getAiAvatarRequestStatus(input: GetAiAvatarRequestStatusInput): Promise<GetAiAvatarRequestStatusOutput> {
+  return getAiAvatarRequestStatusFlow(input);
+}
 
-const aiAvatarFlow = ai.defineFlow(
+
+// Flow for submitting the job
+const submitAiAvatarRequestFlow = ai.defineFlow(
   {
-    name: 'aiAvatarFlow',
-    inputSchema: AiAvatarInputSchema,
-    outputSchema: AiAvatarOutputSchema,
+    name: 'submitAiAvatarRequestFlow',
+    inputSchema: SubmitAiAvatarRequestInputSchema,
+    outputSchema: SubmitAiAvatarRequestOutputSchema,
   },
-  async input => {
+  async (input) => {
     const { apiKey, imageUrl, audioUrl, prompt, num_frames, seed, turbo } = input;
-    const allLogs: any[] = [];
     
     const requestBody: Record<string, any> = {
         image_url: imageUrl,
@@ -61,7 +76,6 @@ const aiAvatarFlow = ai.defineFlow(
     if (seed) requestBody.seed = seed;
     if (turbo !== undefined) requestBody.turbo = turbo;
 
-    // 1. Submit the request to the queue
     const queueResponse = await fetch('https://queue.fal.run/fal-ai/ai-avatar', {
       method: 'POST',
       headers: {
@@ -81,71 +95,71 @@ const aiAvatarFlow = ai.defineFlow(
     if (!request_id) {
         throw new Error('Failed to get request ID from queue response.');
     }
-
-    const resultUrl = `https://queue.fal.run/fal-ai/ai-avatar/requests/${request_id}`;
     
-    // 2. Poll for the result
-    const maxAttempts = 100; // ~5 minutes
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        await sleep(3000); // Wait for 3 seconds between polls
-        
-        const statusResponse = await fetch(`${resultUrl}/status`, {
-            headers: { 'Authorization': `Key ${apiKey}` }
-        });
+    return { requestId: request_id };
+  }
+);
 
-        if (!statusResponse.ok) {
-            console.warn(`Polling status failed with status: ${statusResponse.status}. Retrying...`);
-            continue;
-        }
 
-        const statusResult = await statusResponse.json();
-        if (statusResult.logs) {
-            allLogs.push(...statusResult.logs);
-        }
-        
-        if (statusResult.status === 'COMPLETED') {
-            const resultResponse = await fetch(resultUrl, {
-                headers: { 'Authorization': `Key ${apiKey}` }
-            });
-            
-            if (!resultResponse.ok) {
-                const errorText = await resultResponse.text();
-                throw new Error(`Failed to fetch final result. Status: ${resultResponse.status}, Error: ${errorText}`);
-            }
+// Flow for checking the job status
+const getAiAvatarRequestStatusFlow = ai.defineFlow(
+  {
+    name: 'getAiAvatarRequestStatusFlow',
+    inputSchema: GetAiAvatarRequestStatusInputSchema,
+    outputSchema: GetAiAvatarRequestStatusOutputSchema,
+  },
+  async (input) => {
+    const { requestId, apiKey } = input;
+    const resultUrl = `https://queue.fal.run/fal-ai/ai-avatar/requests/${requestId}`;
+    
+    const statusResponse = await fetch(`${resultUrl}/status`, {
+        headers: { 'Authorization': `Key ${apiKey}` }
+    });
 
-            const finalResult = await resultResponse.json();
-            
-            if (!finalResult.video || !finalResult.video.url) {
-                console.error("Incomplete response from Fal.ai:", finalResult);
-                throw new Error(`Video generation completed, but the video URL is missing. Response: ${JSON.stringify(finalResult)}`);
-            }
-            
-            return { 
-                videoUrl: finalResult.video.url,
-                logs: allLogs.map(log => log.message)
-            };
-
-        } else if (statusResult.status === 'IN_PROGRESS' || statusResult.status === 'IN_QUEUE') {
-             // Continue polling
-             const logMessage = `Polling... Status: ${statusResult.status}, Attempt: ${attempt + 1}/${maxAttempts}`;
-             allLogs.push({ timestamp: new Date().toISOString(), message: logMessage });
-             console.log(logMessage);
-
-        } else if (statusResult.status === 'FAILED') {
-             const resultData = await fetch(resultUrl).then(res => res.json()).catch(() => ({}));
-             if (resultData.logs) {
-                allLogs.push(...resultData.logs);
-             }
-             console.error('Fal.ai Failure Details:', resultData);
-             const logsText = allLogs.map(log => log.message).join('\n');
-             throw new Error(`Video generation failed. Reason: ${resultData?.detail || JSON.stringify(resultData)}. Logs:\n${logsText}`);
-        } else {
-            const unknownStateMessage = `Video generation in unknown state: ${statusResult.status}. Logs: ${JSON.stringify(statusResult.logs)}`;
-            allLogs.push({ timestamp: new Date().toISOString(), message: unknownStateMessage });
-            console.warn(unknownStateMessage);
-        }
+    if (!statusResponse.ok) {
+        console.warn(`Polling status failed with status: ${statusResponse.status}.`);
+        return { status: 'UNKNOWN', logs: [`Polling status failed with status: ${statusResponse.status}`], error: "Polling failed." };
     }
 
-    throw new Error('Video generation timed out after multiple attempts.');
+    const statusResult = await statusResponse.json();
+    const logs = (statusResult.logs || []).map((log: any) => log.message);
+
+    if (statusResult.status === 'COMPLETED') {
+        const resultResponse = await fetch(resultUrl, {
+            headers: { 'Authorization': `Key ${apiKey}` }
+        });
+        
+        if (!resultResponse.ok) {
+            const errorText = await resultResponse.text();
+            return { status: 'FAILED', logs, error: `Failed to fetch final result. Status: ${resultResponse.status}, Error: ${errorText}` };
+        }
+
+        const finalResult = await resultResponse.json();
+        
+        if (!finalResult.video || !finalResult.video.url) {
+            console.error("Incomplete response from Fal.ai:", finalResult);
+            return { status: 'FAILED', logs, error: `Video generation completed, but the video URL is missing.` };
+        }
+        
+        return { 
+            status: 'COMPLETED',
+            videoUrl: finalResult.video.url,
+            logs
+        };
+    } else if (statusResult.status === 'FAILED') {
+        const resultData = await fetch(resultUrl).then(res => res.json()).catch(() => ({}));
+        const finalLogs = (resultData.logs || []).map((log: any) => log.message);
+        console.error('Fal.ai Failure Details:', resultData);
+        const errorDetail = resultData?.detail || JSON.stringify(resultData);
+        return { status: 'FAILED', logs: finalLogs, error: `Video generation failed. Reason: ${errorDetail}` };
+    }
+
+    // Return IN_PROGRESS or IN_QUEUE status
+    return {
+        status: statusResult.status,
+        logs,
+        videoUrl: null,
+        error: null,
+    };
   }
 );

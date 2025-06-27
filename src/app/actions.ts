@@ -26,8 +26,10 @@ import {
   type TextToSpeechInput,
 } from "@/ai/flows/text-to-speech";
 import {
-  generateAiAvatar,
-  type AiAvatarInput,
+  submitAiAvatarRequest,
+  type SubmitAiAvatarRequestInput,
+  getAiAvatarRequestStatus,
+  type GetAiAvatarRequestStatusInput,
 } from "@/ai/flows/ai-avatar";
 
 // Helper to create a standardized response
@@ -119,7 +121,7 @@ export async function textToSpeechAction(input: TextToSpeechInput) {
   return createResponse(textToSpeech(validation.data));
 }
 
-const aiAvatarSchema = z.object({
+const submitAiAvatarSchema = z.object({
   imageUrl: z.string().min(1, "Image URL is required."),
   audioUrl: z.string().min(1, "Audio URL is required."),
   prompt: z.string().min(1, "Prompt is required."),
@@ -129,10 +131,23 @@ const aiAvatarSchema = z.object({
   turbo: z.boolean().optional(),
 });
 
-export async function generateAiAvatarAction(input: AiAvatarInput) {
-    const validation = aiAvatarSchema.safeParse(input);
+export async function submitAiAvatarRequestAction(input: SubmitAiAvatarRequestInput) {
+    const validation = submitAiAvatarSchema.safeParse(input);
     if (!validation.success) {
         return { success: false, error: validation.error.flatten().fieldErrors };
     }
-    return createResponse(generateAiAvatar(validation.data));
+    return createResponse(submitAiAvatarRequest(validation.data));
+}
+
+const getAiAvatarStatusSchema = z.object({
+  requestId: z.string().min(1, "Request ID is required."),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+});
+
+export async function getAiAvatarRequestStatusAction(input: GetAiAvatarRequestStatusInput) {
+    const validation = getAiAvatarStatusSchema.safeParse(input);
+    if (!validation.success) {
+        return { success: false, error: validation.error.flatten().fieldErrors };
+    }
+    return createResponse(getAiAvatarRequestStatus(validation.data));
 }

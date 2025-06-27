@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { generateAiAvatarAction } from '@/app/actions';
+import { submitAiAvatarRequestAction, getAiAvatarRequestStatusAction } from '@/app/actions';
 import { Loader2, Sparkles, Video, AlertTriangle, ChevronDown } from 'lucide-react';
 import useHydratedStore from '@/hooks/use-hydrated-store';
 import { useApiKeyStore } from '@/lib/store/api-keys';
@@ -39,11 +39,62 @@ export function VideoAvatarForm() {
   const [turbo, setTurbo] = useState(true);
 
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [logs, setLogs] = useState<string[] | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const apiKey = useHydratedStore(useApiKeyStore, (state) => state.falAiApiKey);
+
+  // Effect to clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Effect to handle the polling logic
+  useEffect(() => {
+    if (requestId && isPolling && apiKey) {
+      pollingIntervalRef.current = setInterval(async () => {
+        const result = await getAiAvatarRequestStatusAction({ requestId, apiKey });
+
+        if (result.success && result.data) {
+          const { status, logs: newLogs, videoUrl, error } = result.data;
+          
+          if (newLogs) {
+            setLogs(newLogs);
+          }
+
+          if (status === 'COMPLETED' && videoUrl) {
+            setIsPolling(false);
+            if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+            setGeneratedVideo(videoUrl);
+            toast({ title: 'Video generated successfully!' });
+          } else if (status === 'FAILED') {
+            setIsPolling(false);
+            if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+            toast({ title: 'Error generating video', description: error || 'An unknown error occurred.', variant: 'destructive' });
+          }
+        } else {
+          // Handle polling action failure
+          setIsPolling(false);
+          if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+          toast({ title: 'Error checking status', description: result.error as string, variant: 'destructive' });
+        }
+      }, 3000); // Poll every 3 seconds
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [requestId, isPolling, apiKey, toast]);
 
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -85,12 +136,15 @@ export function VideoAvatarForm() {
       return;
     }
 
-    setIsGenerating(true);
+    setIsSubmitting(true);
     setGeneratedVideo(null);
-    setLogs(null);
-    toast({ title: "Video generation started...", description: "This can take a few minutes."});
+    setLogs([]);
+    setRequestId(null);
+    if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
 
-    const result = await generateAiAvatarAction({
+    toast({ title: "Submitting video generation job...", description: "This can take a few minutes."});
+
+    const result = await submitAiAvatarRequestAction({
       imageUrl,
       audioUrl,
       prompt,
@@ -99,23 +153,24 @@ export function VideoAvatarForm() {
       seed: seed,
       turbo: turbo,
     });
-    setIsGenerating(false);
+    
+    setIsSubmitting(false);
 
-    if (result.success && result.data?.videoUrl) {
-      setGeneratedVideo(result.data.videoUrl);
-      if (result.data.logs) {
-        setLogs(result.data.logs);
-      }
-      toast({ title: 'Video generated successfully!' });
+    if (result.success && result.data?.requestId) {
+      setRequestId(result.data.requestId);
+      setIsPolling(true);
+      toast({ title: 'Job submitted!', description: 'Now generating video and fetching logs...' });
     } else {
       const errorMessage = typeof result.error === 'string' ? result.error : 'An unknown error occurred.';
       toast({
-        title: 'Error generating video',
+        title: 'Error submitting job',
         description: errorMessage,
         variant: 'destructive',
       });
     }
   };
+
+  const isGenerating = isSubmitting || isPolling;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -214,7 +269,7 @@ export function VideoAvatarForm() {
         <CardFooter>
           <Button onClick={handleGenerate} disabled={isGenerating || !apiKey || !imageUrl || !audioUrl} className="w-full">
             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Run
+            {isSubmitting ? 'Submitting...' : isPolling ? 'Generating...' : 'Run'}
           </Button>
         </CardFooter>
       </Card>
@@ -224,10 +279,10 @@ export function VideoAvatarForm() {
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center bg-muted/50 rounded-b-lg p-2">
           {isGenerating ? (
-            <div className="text-center text-muted-foreground animate-pulse">
-                <Video className="mx-auto h-12 w-12" />
-                <p className="mt-2 font-semibold">Generating video...</p>
-                <p className="text-sm">This may take a few minutes. Please wait.</p>
+            <div className="text-center text-muted-foreground">
+                <Video className="mx-auto h-12 w-12 animate-pulse" />
+                <p className="mt-2 font-semibold">{isPolling ? 'Generating Video...' : 'Submitting Job...'}</p>
+                <p className="text-sm">This may take a few minutes. Logs will appear below.</p>
             </div>
           ) : generatedVideo ? (
             <video
@@ -248,16 +303,20 @@ export function VideoAvatarForm() {
             </div>
           )}
         </CardContent>
-        {logs && logs.length > 0 && (
+        {(isPolling || logs.length > 0) && (
           <>
-            <CardHeader>
+            <CardHeader className="border-t">
               <CardTitle className="font-headline text-xl">Logs</CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-40 w-full rounded-md border p-4 bg-muted">
-                <pre className="text-xs whitespace-pre-wrap">
-                  {logs.join('\n')}
-                </pre>
+                {logs.length > 0 ? (
+                  <pre className="text-xs whitespace-pre-wrap">
+                    {logs.join('\n')}
+                  </pre>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Waiting for logs...</p>
+                )}
               </ScrollArea>
             </CardContent>
           </>

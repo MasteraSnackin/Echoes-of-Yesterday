@@ -17,7 +17,7 @@ const GenerateImageInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      'The data URI of the avatar image to use as a base, must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.'
+      "The data URI of the avatar image to use as a base, must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   count: z.number().optional().default(1).describe('The number of images to generate.'),
 });
@@ -47,29 +47,41 @@ const generateImageFlow = ai.defineFlow(
 
     const hasAvatar = avatarDataUri != null && avatarDataUri !== '';
 
-    const response = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-preview-image-generation',
-      prompt: hasAvatar
-        ? [
-            {media: {url: avatarDataUri!}},
-            {text: prompt},
-          ]
-        : prompt,
-      candidates: count,
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-      },
-    });
-    
-    const imageDataUris = (response.candidates ?? [])
-        .map(candidate => candidate.output?.media?.url)
-        .filter((url): url is string => !!url);
+    try {
+      const response = await ai.generate({
+        model: 'googleai/gemini-2.0-flash-preview-image-generation',
+        prompt: hasAvatar
+          ? [
+              {media: {url: avatarDataUri!}},
+              {text: prompt},
+            ]
+          : prompt,
+        candidates: count,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
+      });
+      
+      const imageDataUris = (response.candidates ?? [])
+          .map(candidate => candidate.output?.media?.url)
+          .filter((url): url is string => !!url);
 
-    // Fallback for single image generation if candidates array is empty
-    if (imageDataUris.length === 0 && response.media?.url) {
-        imageDataUris.push(response.media.url);
+      // Fallback for single image generation if candidates array is empty
+      if (imageDataUris.length === 0 && response.media?.url) {
+          imageDataUris.push(response.media.url);
+      }
+      
+      if (imageDataUris.length === 0) {
+        throw new Error('Image generation failed to produce an image.');
+      }
+
+      return { imageDataUris };
+    } catch (e: any) {
+      console.error('Error generating image with Gemini', e);
+      if (e.message?.includes('finishReason: SAFETY')) {
+          throw new Error('The prompt or image was blocked by safety filters. Please try a different prompt.');
+      }
+      throw new Error(`An error occurred during image generation: ${e.message}`);
     }
-
-    return { imageDataUris };
   }
 );

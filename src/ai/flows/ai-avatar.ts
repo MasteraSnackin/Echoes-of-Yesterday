@@ -13,7 +13,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 // Schemas for submitting a request
-export const SubmitAiAvatarRequestInputSchema = z.object({
+const SubmitAiAvatarRequestInputSchema = z.object({
   imageUrl: z.string().min(1,"Image URL is required."),
   audioUrl: z.string().min(1, "Audio URL is required."),
   prompt: z.string().min(1, "Prompt is required."),
@@ -31,13 +31,13 @@ export type SubmitAiAvatarRequestOutput = z.infer<typeof SubmitAiAvatarRequestOu
 
 
 // Schemas for checking status
-export const GetAiAvatarRequestStatusInputSchema = z.object({
+const GetAiAvatarRequestStatusInputSchema = z.object({
   requestId: z.string(),
   apiKey: z.string(),
 });
 export type GetAiAvatarRequestStatusInput = z.infer<typeof GetAiAvatarRequestStatusInputSchema>;
 
-export const GetAiAvatarRequestStatusOutputSchema = z.object({
+const GetAiAvatarRequestStatusOutputSchema = z.object({
   status: z.enum(['IN_QUEUE', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'UNKNOWN']),
   videoUrl: z.string().optional().nullable(),
   logs: z.array(z.string()).optional(),

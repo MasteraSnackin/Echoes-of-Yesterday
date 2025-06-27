@@ -25,24 +25,19 @@ import {
   textToSpeech,
   type TextToSpeechInput,
 } from "@/ai/flows/text-to-speech";
-/*
 import {
   generateVideo,
   type GenerateVideoInput,
 } from "@/ai/flows/generate-video";
 import {
-  imageToVideo,
-  type ImageToVideoInput,
-} from "@/ai/flows/image-to-video";
-import {
-  imageToVideoPixverse,
-  type ImageToVideoPixverseInput,
-} from "@/ai/flows/image-to-video-pixverse";
-import {
   imageToVideoMinimax,
   type ImageToVideoMinimaxInput,
 } from "@/ai/flows/image-to-video-minimax";
-*/
+import {
+  generateAiAvatarVideo,
+  type GenerateAiAvatarVideoInput,
+} from "@/ai/flows/ai-avatar-multi";
+
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -133,7 +128,7 @@ export async function textToSpeechAction(input: TextToSpeechInput) {
   return createResponse(textToSpeech(validation.data));
 }
 
-/*
+
 const videoSchema = z.object({
   prompt: z.string().min(1, "Prompt cannot be empty."),
   apiKey: z.string().min(1, "Fal.ai API key is required."),
@@ -145,34 +140,6 @@ export async function generateVideoAction(input: GenerateVideoInput) {
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(generateVideo(validation.data));
-}
-
-const imageToVideoSchema = z.object({
-  imageUrl: z.string().min(1, "Image URL cannot be empty."),
-  prompt: z.string().optional(),
-  apiKey: z.string().min(1, "Fal.ai API key is required."),
-});
-
-export async function imageToVideoAction(input: ImageToVideoInput) {
-  const validation = imageToVideoSchema.safeParse(input);
-  if (!validation.success) {
-    return { success: false, error: validation.error.flatten().fieldErrors };
-  }
-  return createResponse(imageToVideo(validation.data));
-}
-
-const imageToVideoPixverseSchema = z.object({
-  imageUrl: z.string().min(1, "Image URL cannot be empty."),
-  prompt: z.string().optional(),
-  apiKey: z.string().min(1, "Fal.ai API key is required."),
-});
-
-export async function imageToVideoPixverseAction(input: ImageToVideoPixverseInput) {
-  const validation = imageToVideoPixverseSchema.safeParse(input);
-  if (!validation.success) {
-    return { success: false, error: validation.error.flatten().fieldErrors };
-  }
-  return createResponse(imageToVideoPixverse(validation.data));
 }
 
 const imageToVideoMinimaxSchema = z.object({
@@ -188,4 +155,22 @@ export async function imageToVideoMinimaxAction(input: ImageToVideoMinimaxInput)
   }
   return createResponse(imageToVideoMinimax(validation.data));
 }
-*/
+
+const aiAvatarSchema = z.object({
+    apiKey: z.string().min(1, "Fal.ai API key is required."),
+    prompt: z.string().min(1, "Prompt cannot be empty."),
+    imageDataUri: z.string().min(1, "Image is required."),
+    firstAudioDataUri: z.string().min(1, "First audio file is required."),
+    secondAudioDataUri: z.string().optional(),
+    numFrames: z.number().optional(),
+    seed: z.number().optional(),
+    turbo: z.boolean().optional(),
+  });
+  
+  export async function generateAiAvatarVideoAction(input: GenerateAiAvatarVideoInput) {
+    const validation = aiAvatarSchema.safeParse(input);
+    if (!validation.success) {
+      return { success: false, error: validation.error.flatten().fieldErrors };
+    }
+    return createResponse(generateAiAvatarVideo(validation.data));
+  }

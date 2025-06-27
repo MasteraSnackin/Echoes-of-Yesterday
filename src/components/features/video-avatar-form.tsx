@@ -8,12 +8,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { generateAiAvatarAction } from '@/app/actions';
-import { Loader2, Sparkles, Video, AlertTriangle } from 'lucide-react';
+import { Loader2, Sparkles, Video, AlertTriangle, ChevronDown } from 'lucide-react';
 import useHydratedStore from '@/hooks/use-hydrated-store';
 import { useApiKeyStore } from '@/lib/store/api-keys';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -28,7 +31,12 @@ export function VideoAvatarForm() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState<string>('A person talking.');
+  const [prompt, setPrompt] = useState<string>('A woman with colorful hair talking on a podcast.');
+  
+  const [numFrames, setNumFrames] = useState(145);
+  const [seed, setSeed] = useState(42);
+  const [turbo, setTurbo] = useState(true);
+
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -84,6 +92,9 @@ export function VideoAvatarForm() {
       audioUrl,
       prompt,
       apiKey,
+      num_frames: numFrames,
+      seed: seed,
+      turbo: turbo,
     });
     setIsGenerating(false);
 
@@ -104,12 +115,9 @@ export function VideoAvatarForm() {
     <div className="grid gap-8 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Video Avatar Input</CardTitle>
-          <CardDescription>
-            Provide an image, an audio file, and a prompt to generate the video.
-          </CardDescription>
+          <CardTitle className="font-headline text-2xl">Input</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {!apiKey && (
             <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
@@ -121,7 +129,7 @@ export function VideoAvatarForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="image-upload">1. Upload Image</Label>
+            <Label htmlFor="image-upload">Image</Label>
             <Input id="image-upload" type="file" accept="image/*" onChange={handleImageFileChange} disabled={!apiKey || isGenerating} />
           </div>
           {imageUrl && (
@@ -131,12 +139,11 @@ export function VideoAvatarForm() {
           )}
           
           <div className="space-y-2">
-            <Label htmlFor="audio-upload">2. Upload Audio</Label>
+            <Label htmlFor="audio-upload">Audio</Label>
             <Input id="audio-upload" type="file" accept="audio/*" onChange={handleAudioFileChange} disabled={!apiKey || isGenerating} />
           </div>
            {audioPreviewUrl && (
             <div className="space-y-2">
-                <Label>Audio Playback</Label>
                 <audio controls src={audioPreviewUrl} className="w-full">
                     Your browser does not support the audio element.
                 </audio>
@@ -144,7 +151,7 @@ export function VideoAvatarForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="prompt">3. Prompt</Label>
+            <Label htmlFor="prompt">Prompt</Label>
             <Textarea
               id="prompt"
               placeholder="e.g., A person talking..."
@@ -154,17 +161,60 @@ export function VideoAvatarForm() {
               disabled={isGenerating || !apiKey}
             />
           </div>
+
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+                <Button variant="link" className="p-0 flex items-center gap-1">
+                    <ChevronDown className="h-4 w-4" />
+                    Advanced settings
+                </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-6 pt-4">
+                <div className="space-y-2">
+                    <Label htmlFor="num_frames">Number of Frames: {numFrames}</Label>
+                    <Slider
+                        id="num_frames"
+                        min={41}
+                        max={251}
+                        step={1}
+                        value={[numFrames]}
+                        onValueChange={(value) => setNumFrames(value[0])}
+                        disabled={isGenerating || !apiKey}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="seed">Seed</Label>
+                    <Input
+                        id="seed"
+                        type="number"
+                        value={seed}
+                        onChange={(e) => setSeed(Number(e.target.value))}
+                        disabled={isGenerating || !apiKey}
+                    />
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Switch 
+                        id="turbo"
+                        checked={turbo}
+                        onCheckedChange={setTurbo}
+                        disabled={isGenerating || !apiKey}
+                    />
+                    <Label htmlFor="turbo">Turbo Mode</Label>
+                </div>
+            </CollapsibleContent>
+          </Collapsible>
+
         </CardContent>
         <CardFooter>
           <Button onClick={handleGenerate} disabled={isGenerating || !apiKey || !imageUrl || !audioUrl} className="w-full">
             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Generate Video
+            Run
           </Button>
         </CardFooter>
       </Card>
       <Card className="flex flex-col">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Result</CardTitle>
+          <CardTitle className="font-headline text-2xl">Output</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center bg-muted/50 rounded-b-lg p-2">
           {isGenerating ? (

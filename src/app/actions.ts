@@ -124,6 +124,9 @@ const aiAvatarSchema = z.object({
   audioUrl: z.string().min(1, "Audio URL is required."),
   prompt: z.string().min(1, "Prompt is required."),
   apiKey: z.string().min(1, "Fal.ai API key is required."),
+  num_frames: z.number().optional(),
+  seed: z.number().optional(),
+  turbo: z.boolean().optional(),
 });
 
 export async function generateAiAvatarAction(input: AiAvatarInput) {

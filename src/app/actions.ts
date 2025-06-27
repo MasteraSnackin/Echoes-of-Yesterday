@@ -25,7 +25,10 @@ import {
   textToSpeech,
   type TextToSpeechInput,
 } from "@/ai/flows/text-to-speech";
-
+import {
+  generateAiAvatar,
+  type AiAvatarInput,
+} from "@/ai/flows/ai-avatar";
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -114,4 +117,19 @@ export async function textToSpeechAction(input: TextToSpeechInput) {
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(textToSpeech(validation.data));
+}
+
+const aiAvatarSchema = z.object({
+  imageUrl: z.string().min(1, "Image URL is required."),
+  audioUrl: z.string().min(1, "Audio URL is required."),
+  prompt: z.string().min(1, "Prompt is required."),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+});
+
+export async function generateAiAvatarAction(input: AiAvatarInput) {
+    const validation = aiAvatarSchema.safeParse(input);
+    if (!validation.success) {
+        return { success: false, error: validation.error.flatten().fieldErrors };
+    }
+    return createResponse(generateAiAvatar(validation.data));
 }

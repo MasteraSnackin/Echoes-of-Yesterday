@@ -25,9 +25,15 @@ export type GenerateVideoOutput = z.infer<typeof GenerateVideoOutputSchema>;
 export async function generateVideo(input: GenerateVideoInput): Promise<GenerateVideoOutput> {
   try {
     const falWithCreds = fal.withCredentials(input.apiKey);
-    const result: any = await falWithCreds.submit('fal-ai/veo3', {
+    const result: any = await falWithCreds.subscribe('fal-ai/veo3', {
         input: {
           prompt: input.prompt,
+        },
+        logs: true,
+        onQueueUpdate: (update: any) => {
+          if (update.status === 'IN_PROGRESS' && update.logs) {
+            update.logs.forEach((log: { message: string }) => console.log(log.message));
+          }
         },
     });
 

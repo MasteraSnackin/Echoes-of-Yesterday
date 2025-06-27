@@ -41,21 +41,30 @@ const textToVideoKlingFlow = ai.defineFlow(
     });
 
     try {
-      const result: { video: { url: string } } = await fal.run('fal-ai/kling', {
+      // Kling can be a long-running model, so we use subscribe to get results.
+      const resultIterator = await fal.subscribe('fal-ai/kling', {
         input: {
           prompt: prompt,
         },
       });
 
-      if (!result?.video?.url) {
+      let finalResult: { video: { url: string } } | null = null;
+      for await (const event of resultIterator) {
+        if (event.status === 'COMPLETED') {
+            finalResult = event.result as { video: { url: string } };
+        }
+      }
+
+      if (!finalResult?.video?.url) {
         throw new Error('Video URL not found in Fal.ai response.');
       }
 
-      return { videoUrl: result.video.url };
+      return { videoUrl: finalResult.video.url };
 
     } catch (error: any) {
         console.error('Fal.ai Kling API error:', error);
-        throw new Error(`Failed to generate video from Fal.ai: ${error.message}`);
+        const errorMessage = error.message || JSON.stringify(error);
+        throw new Error(`Failed to generate video from Fal.ai: ${errorMessage}`);
     }
   }
 );

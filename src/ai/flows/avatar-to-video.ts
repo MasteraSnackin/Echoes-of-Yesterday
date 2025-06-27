@@ -44,8 +44,8 @@ const avatarToVideoFlow = ai.defineFlow(
     });
 
     try {
-      // The model expects a URL, so we pass the data URI directly.
-      const result: { video: { url: string } } = await fal.run('fal-ai/stable-video-diffusion', {
+      // SVD is a long-running model, so we use subscribe to get results.
+      const resultIterator = await fal.subscribe('fal-ai/stable-video-diffusion', {
         input: {
           image_url: avatarDataUri,
           motion_bucket_id: 127, // Controls the amount of motion
@@ -53,15 +53,24 @@ const avatarToVideoFlow = ai.defineFlow(
         },
       });
 
-      if (!result?.video?.url) {
+      let finalResult: { video: { url: string } } | null = null;
+      for await (const event of resultIterator) {
+        // We only care about the final completed event
+        if (event.status === 'COMPLETED') {
+            finalResult = event.result as { video: { url: string } };
+        }
+      }
+
+      if (!finalResult?.video?.url) {
         throw new Error('Video URL not found in Fal.ai response.');
       }
 
-      return { videoUrl: result.video.url };
+      return { videoUrl: finalResult.video.url };
 
     } catch (error: any) {
         console.error('Fal.ai SVD API error:', error);
-        throw new Error(`Failed to generate video from Fal.ai: ${error.message}`);
+        const errorMessage = error.message || JSON.stringify(error);
+        throw new Error(`Failed to generate video from Fal.ai: ${errorMessage}`);
     }
   }
 );

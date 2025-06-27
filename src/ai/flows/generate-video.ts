@@ -24,16 +24,15 @@ export type GenerateVideoOutput = z.infer<typeof GenerateVideoOutputSchema>;
 // Note: this is not a Genkit flow.
 export async function generateVideo(input: GenerateVideoInput): Promise<GenerateVideoOutput> {
   try {
-    // Correctly call withCredentials as a method of the imported module
-    const result: any = await fal.withCredentials(input.apiKey)
-      .subscribe('fal-ai/veo3', {
+    const falWithCreds = fal.withCredentials(input.apiKey);
+    const result: any = await falWithCreds.submit('fal-ai/veo3', {
         input: {
           prompt: input.prompt,
         },
-      });
+    });
 
     if (!result || !result.video || !result.video.url) {
-        throw new Error('Video generation result was invalid.');
+        throw new Error('Video generation result was invalid or did not contain a video URL.');
     }
 
     return { videoUrl: result.video.url };

@@ -28,8 +28,9 @@ import {
 import {
   submitAiAvatarRequest,
   getAiAvatarRequestStatus,
+  type SubmitAiAvatarRequestInput, 
+  type GetAiAvatarRequestStatusInput,
 } from "@/ai/flows/ai-avatar";
-import type { SubmitAiAvatarRequestInput, GetAiAvatarRequestStatusInput } from "@/ai/flows/ai-avatar";
 import {
   submitAudioToVideoRequest,
   getAudioToVideoRequestStatus,

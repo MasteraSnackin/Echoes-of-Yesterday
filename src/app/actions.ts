@@ -37,6 +37,13 @@ import {
   type SubmitAudioToVideoRequestInput,
   type GetAudioToVideoRequestStatusInput,
 } from "@/ai/flows/audio-to-video";
+import {
+  submitImageTo3dRequest,
+  getImageTo3dRequestStatus,
+  type SubmitImageTo3dRequestInput,
+  type GetImageTo3dRequestStatusInput,
+} from "@/ai/flows/image-to-3d";
+
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -183,4 +190,40 @@ export async function getAudioToVideoRequestStatusAction(input: GetAudioToVideoR
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(getAudioToVideoRequestStatus(validation.data));
+}
+
+const submitImageTo3dSchema = z.object({
+  imageUrl: z.string().min(1),
+  apiKey: z.string().min(1),
+  face_limit: z.number().optional(),
+  style: z.string().optional(),
+  pbr: z.boolean().optional(),
+  texture: z.string().optional(),
+  texture_alignment: z.string().optional(),
+  auto_size: z.boolean().optional(),
+  seed: z.number().optional(),
+  quad: z.boolean().optional(),
+  orientation: z.string().optional(),
+  texture_seed: z.number().optional(),
+});
+
+export async function submitImageTo3dRequestAction(input: SubmitImageTo3dRequestInput) {
+  const validation = submitImageTo3dSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(submitImageTo3dRequest(validation.data));
+}
+
+const getImageTo3dStatusSchema = z.object({
+  requestId: z.string().min(1, "Request ID is required."),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+});
+
+export async function getImageTo3dRequestStatusAction(input: GetImageTo3dRequestStatusInput) {
+  const validation = getImageTo3dStatusSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(getImageTo3dRequestStatus(validation.data));
 }

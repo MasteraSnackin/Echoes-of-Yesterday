@@ -6,7 +6,7 @@
  * - GenerateVideoInput - The input type for the generateVideo function.
  * - GenerateVideoOutput - The return type for the generateVideo function.
  */
-import * as fal from '@fal-ai/serverless-client';
+import { withCredentials } from '@fal-ai/serverless-client';
 import { z } from 'zod';
 
 const GenerateVideoInputSchema = z.object({
@@ -23,8 +23,7 @@ export type GenerateVideoOutput = z.infer<typeof GenerateVideoOutputSchema>;
 // Note: this is not a Genkit flow.
 export async function generateVideo(input: GenerateVideoInput): Promise<GenerateVideoOutput> {
   try {
-    const result: any = await fal
-      .withCredentials(input.apiKey)
+    const result: any = await withCredentials(input.apiKey)
       .subscribe('fal-ai/veo3', {
         input: {
           prompt: input.prompt,

@@ -35,7 +35,6 @@ const generationItems = [
   { href: "/dashboard/voice-cloning", label: "Voice Cloning", icon: Mic },
   { href: "/dashboard/avatar-generation", label: "Avatar Generation", icon: Image },
   { href: "/dashboard/text-to-video", label: "Image Studio", icon: Wand2 },
-  { href: "/dashboard/ai-avatar-multi", label: "AI Avatar (Multi)", icon: Film },
 ];
 
 export function DashboardNav() {

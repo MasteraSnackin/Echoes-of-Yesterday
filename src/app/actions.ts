@@ -25,10 +25,6 @@ import {
   textToSpeech,
   type TextToSpeechInput,
 } from "@/ai/flows/text-to-speech";
-import {
-  generateAiAvatarVideo,
-  type GenerateAiAvatarVideoInput,
-} from "@/ai/flows/ai-avatar-multi";
 
 
 // Helper to create a standardized response
@@ -119,22 +115,3 @@ export async function textToSpeechAction(input: TextToSpeechInput) {
   }
   return createResponse(textToSpeech(validation.data));
 }
-
-const aiAvatarSchema = z.object({
-    apiKey: z.string().min(1, "Fal.ai API key is required."),
-    prompt: z.string().min(1, "Prompt cannot be empty."),
-    imageDataUri: z.string().min(1, "Image is required."),
-    firstAudioDataUri: z.string().min(1, "First audio file is required."),
-    secondAudioDataUri: z.string().optional(),
-    numFrames: z.number().optional(),
-    seed: z.number().optional(),
-    turbo: z.boolean().optional(),
-  });
-  
-  export async function generateAiAvatarVideoAction(input: GenerateAiAvatarVideoInput) {
-    const validation = aiAvatarSchema.safeParse(input);
-    if (!validation.success) {
-      return { success: false, error: validation.error.flatten().fieldErrors };
-    }
-    return createResponse(generateAiAvatarVideo(validation.data));
-  }

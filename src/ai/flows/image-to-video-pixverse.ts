@@ -6,8 +6,7 @@
  * - ImageToVideoPixverseInput - The input type for the imageToVideoPixverse function.
  * - ImageToVideoPixverseOutput - The return type for the imageToVideoPixverse function.
  */
-// Use require for robust module loading in Next.js server environment
-const { withCredentials } = require('@fal-ai/serverless-client');
+import * as fal from '@fal-ai/serverless-client';
 import { z } from 'zod';
 
 const ImageToVideoPixverseInputSchema = z.object({
@@ -25,8 +24,8 @@ export type ImageToVideoPixverseOutput = z.infer<typeof ImageToVideoPixverseOutp
 // Note: this is not a Genkit flow.
 export async function imageToVideoPixverse(input: ImageToVideoPixverseInput): Promise<ImageToVideoPixverseOutput> {
   try {
-    const fal = withCredentials(input.apiKey);
-    const result: any = await fal.subscribe('fal-ai/pixverse/v4.5/image-to-video', {
+    const authenticatedFal = fal.withCredentials(input.apiKey);
+    const result: any = await authenticatedFal.subscribe('fal-ai/pixverse/v4.5/image-to-video', {
         input: {
           image_url: input.imageUrl,
           prompt: input.prompt,

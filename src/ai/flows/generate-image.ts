@@ -55,9 +55,9 @@ const generateImageFlow = ai.defineFlow(
             {text: prompt},
           ]
         : prompt,
+      candidates: count,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
-        candidates: count,
       },
     });
     

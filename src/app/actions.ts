@@ -37,6 +37,10 @@ import {
   imageToVideoPixverse,
   type ImageToVideoPixverseInput,
 } from "@/ai/flows/image-to-video-pixverse";
+import {
+  imageToVideoMinimax,
+  type ImageToVideoMinimaxInput,
+} from "@/ai/flows/image-to-video-minimax";
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -166,4 +170,18 @@ export async function imageToVideoPixverseAction(input: ImageToVideoPixverseInpu
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(imageToVideoPixverse(validation.data));
+}
+
+const imageToVideoMinimaxSchema = z.object({
+  imageUrl: z.string().min(1, "Image URL cannot be empty."),
+  prompt: z.string().optional(),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+});
+
+export async function imageToVideoMinimaxAction(input: ImageToVideoMinimaxInput) {
+  const validation = imageToVideoMinimaxSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(imageToVideoMinimax(validation.data));
 }

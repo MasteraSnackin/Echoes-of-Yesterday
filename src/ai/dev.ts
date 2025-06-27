@@ -9,3 +9,4 @@ import '@/ai/flows/speech-to-text.ts';
 import '@/ai/flows/text-to-speech.ts';
 import '@/ai/flows/image-to-video.ts';
 import '@/ai/flows/image-to-video-pixverse.ts';
+import '@/ai/flows/image-to-video-minimax.ts';

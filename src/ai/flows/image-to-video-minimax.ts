@@ -1,30 +1,30 @@
 'use server';
 /**
- * @fileOverview A flow for generating video from an image using Fal.ai Kling.
+ * @fileOverview A flow for generating video from an image using Fal.ai Minimax.
  *
- * - imageToVideo - A function that generates a video based on the provided image and prompt.
- * - ImageToVideoInput - The input type for the imageToVideo function.
- * - ImageToVideoOutput - The return type for the imageToVideo function.
+ * - imageToVideoMinimax - A function that generates a video based on the provided image and prompt.
+ * - ImageToVideoMinimaxInput - The input type for the imageToVideoMinimax function.
+ * - ImageToVideoMinimaxOutput - The return type for the imageToVideoMinimax function.
  */
 import { fal } from '@fal-ai/client';
 import { z } from 'zod';
 
-const ImageToVideoInputSchema = z.object({
+const ImageToVideoMinimaxInputSchema = z.object({
   imageUrl: z.string().describe("The data URI of the image to animate."),
   prompt: z.string().optional().describe('An optional text prompt to guide video generation.'),
   apiKey: z.string().describe('The Fal.ai API key.'),
 });
-export type ImageToVideoInput = z.infer<typeof ImageToVideoInputSchema>;
+export type ImageToVideoMinimaxInput = z.infer<typeof ImageToVideoMinimaxInputSchema>;
 
-const ImageToVideoOutputSchema = z.object({
+const ImageToVideoMinimaxOutputSchema = z.object({
   videoUrl: z.string().describe('The URL of the generated video.'),
 });
-export type ImageToVideoOutput = z.infer<typeof ImageToVideoOutputSchema>;
+export type ImageToVideoMinimaxOutput = z.infer<typeof ImageToVideoMinimaxOutputSchema>;
 
 // Note: this is not a Genkit flow.
-export async function imageToVideo(input: ImageToVideoInput): Promise<ImageToVideoOutput> {
+export async function imageToVideoMinimax(input: ImageToVideoMinimaxInput): Promise<ImageToVideoMinimaxOutput> {
   try {
-    const result: any = await fal.subscribe('fal-ai/kling-video/v2.1/master/image-to-video', {
+    const result: any = await fal.subscribe('fal-ai/minimax-video/image-to-video', {
         input: {
           image_url: input.imageUrl,
           prompt: input.prompt,
@@ -44,7 +44,7 @@ export async function imageToVideo(input: ImageToVideoInput): Promise<ImageToVid
 
     return { videoUrl: result.video.url };
   } catch (error: any) {
-    console.error('Fal.ai image-to-video generation error:', error);
+    console.error('Fal.ai Minimax image-to-video generation error:', error);
     throw new Error(error.message || 'Failed to generate video from Fal.ai.');
   }
 }

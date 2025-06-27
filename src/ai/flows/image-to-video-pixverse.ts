@@ -6,7 +6,7 @@
  * - ImageToVideoPixverseInput - The input type for the imageToVideoPixverse function.
  * - ImageToVideoPixverseOutput - The return type for the imageToVideoPixverse function.
  */
-import * as fal from '@fal-ai/serverless-client';
+import { fal } from '@fal-ai/client';
 import { z } from 'zod';
 
 const ImageToVideoPixverseInputSchema = z.object({
@@ -24,12 +24,12 @@ export type ImageToVideoPixverseOutput = z.infer<typeof ImageToVideoPixverseOutp
 // Note: this is not a Genkit flow.
 export async function imageToVideoPixverse(input: ImageToVideoPixverseInput): Promise<ImageToVideoPixverseOutput> {
   try {
-    const authenticatedFal = fal.withCredentials(input.apiKey);
-    const result: any = await authenticatedFal.subscribe('fal-ai/pixverse/v4.5/image-to-video', {
+    const result: any = await fal.subscribe('fal-ai/pixverse/v4.5/image-to-video', {
         input: {
           image_url: input.imageUrl,
           prompt: input.prompt,
         },
+        credentials: input.apiKey,
         logs: true,
         onQueueUpdate: (update: any) => {
           if (update.status === 'IN_PROGRESS' && update.logs) {

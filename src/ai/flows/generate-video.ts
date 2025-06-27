@@ -6,7 +6,7 @@
  * - GenerateVideoInput - The input type for the generateVideo function.
  * - GenerateVideoOutput - The return type for the generateVideo function.
  */
-import { withCredentials } from '@fal-ai/serverless-client';
+const { withCredentials } = require('@fal-ai/serverless-client');
 import { z } from 'zod';
 
 const GenerateVideoInputSchema = z.object({

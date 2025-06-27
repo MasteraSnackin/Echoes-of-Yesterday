@@ -35,10 +35,10 @@ const generationItems = [
   { href: "/dashboard/voice-cloning", label: "Voice Cloning", icon: Mic },
   { href: "/dashboard/avatar-generation", label: "Avatar Generation", icon: Image },
   { href: "/dashboard/text-to-video", label: "Image Studio", icon: Wand2 },
-  { href: "/dashboard/text-to-video-google", label: "Text to Video", icon: Video },
-  { href: "/dashboard/image-to-video", label: "Image to Video (Kling)", icon: Film },
-  { href: "/dashboard/image-to-video-pixverse", label: "Image to Video (Pixverse)", icon: Film },
-  { href: "/dashboard/image-to-video-minimax", label: "Image to Video (Minimax)", icon: Film },
+  // { href: "/dashboard/text-to-video-google", label: "Text to Video", icon: Video },
+  // { href: "/dashboard/image-to-video", label: "Image to Video (Kling)", icon: Film },
+  // { href: "/dashboard/image-to-video-pixverse", label: "Image to Video (Pixverse)", icon: Film },
+  // { href: "/dashboard/image-to-video-minimax", label: "Image to Video (Minimax)", icon: Film },
 ];
 
 export function DashboardNav() {

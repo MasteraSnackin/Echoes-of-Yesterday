@@ -1,15 +1,18 @@
 import { DashboardHeader } from "@/components/dashboard-header";
-import { TextToVideoForm } from "@/components/features/text-to-video-form";
+import { PlaceholderPage } from "@/components/placeholder-page";
 
 export default function TextToVideoPage() {
   return (
     <>
       <DashboardHeader
         title="Text to Video"
-        description="Generate a video from a text prompt using Fal.ai Veo3."
+        description="This feature is temporarily unavailable."
       />
       <main className="flex-1 p-6">
-        <TextToVideoForm />
+        <PlaceholderPage
+          title="Feature Unavailable"
+          description="The video generation service is currently down. We are working to resolve this issue."
+        />
       </main>
     </>
   );

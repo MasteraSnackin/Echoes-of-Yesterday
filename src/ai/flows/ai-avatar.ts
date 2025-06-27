@@ -31,6 +31,7 @@ export type AiAvatarInput = z.infer<typeof AiAvatarInputSchema>;
 
 const AiAvatarOutputSchema = z.object({
   videoUrl: z.string().describe('The URL of the generated video.'),
+  logs: z.array(z.string()).optional().describe('The generation logs.'),
 });
 export type AiAvatarOutput = z.infer<typeof AiAvatarOutputSchema>;
 
@@ -48,6 +49,7 @@ const aiAvatarFlow = ai.defineFlow(
   },
   async input => {
     const { apiKey, imageUrl, audioUrl, prompt, num_frames, seed, turbo } = input;
+    const allLogs: any[] = [];
     
     const requestBody: Record<string, any> = {
         image_url: imageUrl,
@@ -97,6 +99,9 @@ const aiAvatarFlow = ai.defineFlow(
         }
 
         const statusResult = await statusResponse.json();
+        if (statusResult.logs) {
+            allLogs.push(...statusResult.logs);
+        }
         
         if (statusResult.status === 'COMPLETED') {
             const resultResponse = await fetch(resultUrl, {
@@ -115,16 +120,29 @@ const aiAvatarFlow = ai.defineFlow(
                 throw new Error(`Video generation completed, but the video URL is missing. Response: ${JSON.stringify(finalResult)}`);
             }
             
-            return { videoUrl: finalResult.video.url };
+            return { 
+                videoUrl: finalResult.video.url,
+                logs: allLogs.map(log => log.message)
+            };
 
         } else if (statusResult.status === 'IN_PROGRESS' || statusResult.status === 'IN_QUEUE') {
-             console.log(`Polling... Status: ${statusResult.status}, Attempt: ${attempt + 1}/${maxAttempts}`);
+             // Continue polling
+             const logMessage = `Polling... Status: ${statusResult.status}, Attempt: ${attempt + 1}/${maxAttempts}`;
+             allLogs.push({ timestamp: new Date().toISOString(), message: logMessage });
+             console.log(logMessage);
+
         } else if (statusResult.status === 'FAILED') {
              const resultData = await fetch(resultUrl).then(res => res.json()).catch(() => ({}));
+             if (resultData.logs) {
+                allLogs.push(...resultData.logs);
+             }
              console.error('Fal.ai Failure Details:', resultData);
-             throw new Error(`Video generation failed. Reason: ${resultData?.detail || JSON.stringify(resultData)}`);
+             const logsText = allLogs.map(log => log.message).join('\n');
+             throw new Error(`Video generation failed. Reason: ${resultData?.detail || JSON.stringify(resultData)}. Logs:\n${logsText}`);
         } else {
-            console.warn(`Video generation in unknown state: ${statusResult.status}. Logs: ${JSON.stringify(statusResult.logs)}`);
+            const unknownStateMessage = `Video generation in unknown state: ${statusResult.status}. Logs: ${JSON.stringify(statusResult.logs)}`;
+            allLogs.push({ timestamp: new Date().toISOString(), message: unknownStateMessage });
+            console.warn(unknownStateMessage);
         }
     }
 

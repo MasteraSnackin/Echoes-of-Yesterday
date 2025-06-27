@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ScrollArea } from '../ui/scroll-area';
 
 const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -39,6 +40,7 @@ export function VideoAvatarForm() {
 
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [logs, setLogs] = useState<string[] | null>(null);
   const { toast } = useToast();
 
   const apiKey = useHydratedStore(useApiKeyStore, (state) => state.falAiApiKey);
@@ -85,6 +87,7 @@ export function VideoAvatarForm() {
 
     setIsGenerating(true);
     setGeneratedVideo(null);
+    setLogs(null);
     toast({ title: "Video generation started...", description: "This can take a few minutes."});
 
     const result = await generateAiAvatarAction({
@@ -100,6 +103,9 @@ export function VideoAvatarForm() {
 
     if (result.success && result.data?.videoUrl) {
       setGeneratedVideo(result.data.videoUrl);
+      if (result.data.logs) {
+        setLogs(result.data.logs);
+      }
       toast({ title: 'Video generated successfully!' });
     } else {
       const errorMessage = typeof result.error === 'string' ? result.error : 'An unknown error occurred.';
@@ -242,6 +248,20 @@ export function VideoAvatarForm() {
             </div>
           )}
         </CardContent>
+        {logs && logs.length > 0 && (
+          <>
+            <CardHeader>
+              <CardTitle className="font-headline text-xl">Logs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-40 w-full rounded-md border p-4 bg-muted">
+                <pre className="text-xs whitespace-pre-wrap">
+                  {logs.join('\n')}
+                </pre>
+              </ScrollArea>
+            </CardContent>
+          </>
+        )}
       </Card>
     </div>
   );

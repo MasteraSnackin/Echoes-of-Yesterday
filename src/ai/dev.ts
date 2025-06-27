@@ -8,3 +8,4 @@ import '@/ai/flows/voice-cloning.ts';
 import '@/ai/flows/speech-to-text.ts';
 import '@/ai/flows/text-to-speech.ts';
 import '@/ai/flows/text-to-video-kling.ts';
+import '@/ai/flows/avatar-to-video.ts';

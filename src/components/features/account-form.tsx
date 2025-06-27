@@ -23,6 +23,7 @@ import { useEffect } from "react";
 const formSchema = z.object({
   elevenLabsApiKey: z.string().optional(),
   photoroomApiKey: z.string().optional(),
+  falAiApiKey: z.string().optional(),
 });
 
 type ApiKeyFormValues = z.infer<typeof formSchema>;
@@ -32,6 +33,7 @@ export function AccountForm() {
   
   const elevenLabsApiKey = useHydratedStore(useApiKeyStore, (state) => state.elevenLabsApiKey);
   const photoroomApiKey = useHydratedStore(useApiKeyStore, (state) => state.photoroomApiKey);
+  const falAiApiKey = useHydratedStore(useApiKeyStore, (state) => state.falAiApiKey);
 
   const setApiKey = useApiKeyStore((state) => state.setApiKey);
 
@@ -40,20 +42,23 @@ export function AccountForm() {
     defaultValues: {
       elevenLabsApiKey: "",
       photoroomApiKey: "",
+      falAiApiKey: "",
     },
   });
 
   useEffect(() => {
     if (
       elevenLabsApiKey !== undefined &&
-      photoroomApiKey !== undefined
+      photoroomApiKey !== undefined &&
+      falAiApiKey !== undefined
     ) {
       form.reset({
         elevenLabsApiKey: elevenLabsApiKey || '',
         photoroomApiKey: photoroomApiKey || '',
+        falAiApiKey: falAiApiKey || '',
       });
     }
-  }, [elevenLabsApiKey, photoroomApiKey, form]);
+  }, [elevenLabsApiKey, photoroomApiKey, falAiApiKey, form]);
 
 
   function onSubmit(data: ApiKeyFormValues) {
@@ -89,6 +94,22 @@ export function AccountForm() {
                   </FormControl>
                   <FormDescription>
                     Required for voice cloning.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="falAiApiKey"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fal.ai API Key</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="key_id:key_secret" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Required for video generation. Get a free key from <a href="https://fal.ai" target="_blank" rel="noopener noreferrer" className="underline">fal.ai</a>.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

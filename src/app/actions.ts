@@ -25,6 +25,10 @@ import {
   textToSpeech,
   type TextToSpeechInput,
 } from "@/ai/flows/text-to-speech";
+import {
+  generateVideo,
+  type GenerateVideoInput,
+} from "@/ai/flows/generate-video";
 
 // Helper to create a standardized response
 function createResponse<T>(promise: Promise<T>) {
@@ -113,4 +117,17 @@ export async function textToSpeechAction(input: TextToSpeechInput) {
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(textToSpeech(validation.data));
+}
+
+const videoSchema = z.object({
+  prompt: z.string().min(1, "Prompt cannot be empty."),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+});
+
+export async function generateVideoAction(input: GenerateVideoInput) {
+  const validation = videoSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(generateVideo(validation.data));
 }

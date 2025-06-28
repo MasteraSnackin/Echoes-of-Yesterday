@@ -14,6 +14,7 @@ import {
   Video,
   PersonStanding,
   Box,
+  Film,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ const generationItems = [
   { href: "/dashboard/text-to-video", label: "Image Studio", icon: Wand2 },
   { href: "/dashboard/video-avatar", label: "Video Avatar", icon: Video },
   { href: "/dashboard/audio-to-video", label: "Audio to Video", icon: PersonStanding },
+  { href: "/dashboard/image-to-video", label: "Image to Video", icon: Film },
   { href: "/dashboard/image-to-3d", label: "Image to 3D", icon: Box },
 ];
 

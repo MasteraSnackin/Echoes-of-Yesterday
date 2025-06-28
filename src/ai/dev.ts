@@ -10,9 +10,7 @@ import '@/ai/flows/text-to-speech.ts';
 import '@/ai/flows/ai-avatar.ts';
 import '@/ai/flows/audio-to-video.ts';
 import '@/ai/flows/image-to-3d.ts';
+import '@/ai/flows/image-to-video-kling.ts';
 // import '@/ai/flows/image-to-video.ts';
 // import '@/ai/flows/image-to-video-pixverse.ts';
 // import '@/ai/flows/image-to-video-minimax.ts';
-
-
-

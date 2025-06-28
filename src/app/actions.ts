@@ -43,6 +43,12 @@ import {
   type SubmitImageTo3dRequestInput,
   type GetImageTo3dRequestStatusInput,
 } from "@/ai/flows/image-to-3d";
+import {
+  submitImageToVideoKlingRequest,
+  getImageToVideoKlingRequestStatus,
+  type SubmitImageToVideoKlingRequestInput,
+  type GetImageToVideoKlingRequestStatusInput,
+} from "@/ai/flows/image-to-video-kling";
 
 
 // Helper to create a standardized response
@@ -226,4 +232,34 @@ export async function getImageTo3dRequestStatusAction(input: GetImageTo3dRequest
     return { success: false, error: validation.error.flatten().fieldErrors };
   }
   return createResponse(getImageTo3dRequestStatus(validation.data));
+}
+
+const submitImageToVideoKlingSchema = z.object({
+  imageUrl: z.string().min(1, "Image URL is required."),
+  prompt: z.string().min(1, "Prompt is required."),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+  duration: z.enum(["5", "10"]).optional(),
+  cfg_scale: z.number().min(0).max(1).optional(),
+  negative_prompt: z.string().optional(),
+});
+
+export async function submitImageToVideoKlingRequestAction(input: SubmitImageToVideoKlingRequestInput) {
+  const validation = submitImageToVideoKlingSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(submitImageToVideoKlingRequest(validation.data));
+}
+
+const getImageToVideoKlingStatusSchema = z.object({
+  requestId: z.string().min(1, "Request ID is required."),
+  apiKey: z.string().min(1, "Fal.ai API key is required."),
+});
+
+export async function getImageToVideoKlingRequestStatusAction(input: GetImageToVideoKlingRequestStatusInput) {
+  const validation = getImageToVideoKlingStatusSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.flatten().fieldErrors };
+  }
+  return createResponse(getImageToVideoKlingRequestStatus(validation.data));
 }

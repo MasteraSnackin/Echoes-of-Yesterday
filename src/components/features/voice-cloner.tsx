@@ -11,7 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Mic, CheckCircle2, AlertTriangle, Volume2, Upload, Info } from 'lucide-react';
+import { Loader2, Mic, CheckCircle2, AlertTriangle, Volume2, Upload, Info, ExternalLink } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -62,11 +62,11 @@ export function VoiceCloner() {
         return;
       }
 
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
+      // Validate file size (25MB limit for ElevenLabs)
+      if (file.size > 25 * 1024 * 1024) {
         toast({
           title: "File too large",
-          description: "Please upload an audio file smaller than 10MB.",
+          description: "Please upload an audio file smaller than 25MB.",
           variant: "destructive"
         });
         return;
@@ -187,7 +187,10 @@ export function VoiceCloner() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Create a Voice Clone</CardTitle>
+          <CardTitle className="font-headline text-2xl flex items-center gap-2">
+            <Mic className="h-6 w-6" />
+            ElevenLabs Voice Cloning
+          </CardTitle>
           <CardDescription>
             Upload a clear audio sample to create a realistic voice clone using ElevenLabs technology.
           </CardDescription>
@@ -198,32 +201,48 @@ export function VoiceCloner() {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>ElevenLabs API Key Required</AlertTitle>
               <AlertDescription>
-                Please go to the <Link href="/dashboard/account" className="font-bold underline">Account</Link> page to add your ElevenLabs API key.
+                <div className="space-y-2">
+                  <p>You need an ElevenLabs API key to use voice cloning.</p>
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/dashboard/account">
+                        Add API Key
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                      <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener noreferrer">
+                        Get ElevenLabs Key <ExternalLink className="ml-1 h-3 w-3" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
               </AlertDescription>
             </Alert>
           )}
 
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertTitle>Voice Cloning Tips</AlertTitle>
+            <AlertTitle>Voice Cloning Requirements</AlertTitle>
             <AlertDescription>
               <ul className="list-disc list-inside space-y-1 text-sm mt-2">
-                <li>Use high-quality audio (at least 1 minute recommended)</li>
-                <li>Ensure clear speech with minimal background noise</li>
-                <li>Single speaker only - no music or other voices</li>
-                <li>Supported formats: MP3, WAV, M4A, FLAC</li>
+                <li><strong>Audio Quality:</strong> High-quality, clear speech (at least 1 minute recommended)</li>
+                <li><strong>Content:</strong> Single speaker only - no music or background noise</li>
+                <li><strong>Format:</strong> MP3, WAV, M4A, FLAC (max 25MB)</li>
+                <li><strong>Language:</strong> English works best, but multilingual is supported</li>
+                <li><strong>ElevenLabs Account:</strong> Requires active subscription for voice cloning</li>
               </ul>
             </AlertDescription>
           </Alert>
 
           <div className="space-y-2">
-            <Label htmlFor="voice-name">Voice Name</Label>
+            <Label htmlFor="voice-name">Voice Name *</Label>
             <Input 
               id="voice-name"
               value={voiceName}
               onChange={(e) => setVoiceName(e.target.value)}
               placeholder="Enter a name for this voice..."
               disabled={isCloning}
+              required
             />
           </div>
 
@@ -233,25 +252,28 @@ export function VoiceCloner() {
               id="voice-description"
               value={voiceDescription}
               onChange={(e) => setVoiceDescription(e.target.value)}
-              placeholder="Describe this voice..."
+              placeholder="Describe this voice (e.g., 'Warm, friendly female voice')"
               className="min-h-[80px]"
               disabled={isCloning}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="audio-upload">Audio File</Label>
+            <Label htmlFor="audio-upload">Audio File *</Label>
             <Input 
               id="audio-upload" 
               type="file" 
               accept="audio/*" 
               onChange={handleFileChange} 
               disabled={!apiKey || isCloning}
+              required
             />
             {audioFile && (
-              <p className="text-sm text-muted-foreground">
-                Selected: {audioFile.name} ({(audioFile.size / 1024 / 1024).toFixed(2)} MB)
-              </p>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>📁 {audioFile.name}</p>
+                <p>📊 {(audioFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p>🎵 {audioFile.type}</p>
+              </div>
             )}
           </div>
 
@@ -275,7 +297,7 @@ export function VoiceCloner() {
             ) : (
               <Upload className="mr-2 h-4 w-4" />
             )}
-            {isCloning ? 'Cloning Voice...' : 'Clone Voice'}
+            {isCloning ? 'Cloning Voice with ElevenLabs...' : 'Clone Voice with ElevenLabs'}
           </Button>
         </CardFooter>
       </Card>
@@ -288,12 +310,12 @@ export function VoiceCloner() {
               <CardTitle className="font-headline text-xl">Active Voice Clone</CardTitle>
             </div>
             <CardDescription>
-              Test your cloned voice by generating speech from text.
+              Your voice has been successfully cloned with ElevenLabs. Test it below or use it in the chat interface.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-3 bg-muted rounded-md">
-              <p className="text-sm font-medium">Voice ID:</p>
+              <p className="text-sm font-medium">ElevenLabs Voice ID:</p>
               <p className="font-mono text-xs break-all text-muted-foreground">{hydratedVoiceId}</p>
             </div>
 
@@ -303,7 +325,7 @@ export function VoiceCloner() {
                 id="test-text"
                 value={testText}
                 onChange={(e) => setTestText(e.target.value)}
-                placeholder="Enter text to generate audio..."
+                placeholder="Enter text to generate audio with your cloned voice..."
                 className="min-h-[100px]"
                 disabled={isTesting}
               />
@@ -319,12 +341,12 @@ export function VoiceCloner() {
               ) : (
                 <Volume2 className="mr-2 h-4 w-4" />
               )}
-              {isTesting ? 'Generating...' : 'Generate Test Audio'}
+              {isTesting ? 'Generating with ElevenLabs...' : 'Generate Test Audio'}
             </Button>
 
             {testAudioUri && (
               <div className="space-y-2">
-                <Label>Generated Audio</Label>
+                <Label>Generated Audio (ElevenLabs)</Label>
                 <audio controls src={testAudioUri} className="w-full">
                   Your browser does not support the audio element.
                 </audio>

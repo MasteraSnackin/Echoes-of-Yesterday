@@ -1,14 +1,13 @@
 'use server';
 /**
- * @fileOverview A flow for cloning a voice from an audio file using the ElevenLabs API.
+ * @fileOverview A flow for cloning a voice from an audio file using the ElevenLabs API directly.
  *
  * - cloneVoice - Clones a voice from an audio file.
  * - CloneVoiceInput - The input type for the cloneVoice function.
  * - CloneVoiceOutput - The return type for the cloneVoice function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const CloneVoiceInputSchema = z.object({
   audioDataUri: z
@@ -30,75 +29,64 @@ const CloneVoiceOutputSchema = z.object({
 export type CloneVoiceOutput = z.infer<typeof CloneVoiceOutputSchema>;
 
 export async function cloneVoice(input: CloneVoiceInput): Promise<CloneVoiceOutput> {
-  return cloneVoiceFlow(input);
-}
+  const { audioDataUri, fileName, apiKey, voiceName, description } = input;
 
-const cloneVoiceFlow = ai.defineFlow(
-  {
-    name: 'cloneVoiceFlow',
-    inputSchema: CloneVoiceInputSchema,
-    outputSchema: CloneVoiceOutputSchema,
-  },
-  async input => {
-    const { audioDataUri, fileName, apiKey, voiceName, description } = input;
+  try {
+    // Convert data URI to Blob
+    const response = await fetch(audioDataUri);
+    const blob = await response.blob();
 
-    try {
-      // Convert data URI to Blob
-      const response = await fetch(audioDataUri);
-      const blob = await response.blob();
+    // Create FormData for ElevenLabs API
+    const formData = new FormData();
+    formData.append('name', voiceName || `Cloned Voice - ${new Date().toISOString()}`);
+    formData.append('files', blob, fileName);
+    formData.append('description', description || 'A voice cloned for the Echoes of Yesterday memorial.');
 
-      // Create FormData for ElevenLabs API
-      const formData = new FormData();
-      formData.append('name', voiceName || `Cloned Voice - ${new Date().toISOString()}`);
-      formData.append('files', blob, fileName);
-      formData.append('description', description || 'A voice cloned for the Echoes of Yesterday memorial.');
+    // Call ElevenLabs Voice Cloning API directly
+    const elevenLabsResponse = await fetch('https://api.elevenlabs.io/v1/voices/add', {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+      },
+      body: formData,
+    });
 
-      // Call ElevenLabs Voice Cloning API
-      const elevenLabsResponse = await fetch('https://api.elevenlabs.io/v1/voices/add', {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-        },
-        body: formData,
-      });
-
-      if (!elevenLabsResponse.ok) {
-        const errorText = await elevenLabsResponse.text();
-        let errorMessage = `Failed to clone voice. ElevenLabs API error: ${errorText}`;
-        
-        // Parse common ElevenLabs errors
-        try {
-          const errorJson = JSON.parse(errorText);
-          if (errorJson.detail) {
-            if (typeof errorJson.detail === 'string') {
-              errorMessage = errorJson.detail;
-            } else if (errorJson.detail.message) {
-              errorMessage = errorJson.detail.message;
-            }
-          }
-        } catch (e) {
-          // Keep original error message if parsing fails
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      const result = await elevenLabsResponse.json();
+    if (!elevenLabsResponse.ok) {
+      const errorText = await elevenLabsResponse.text();
+      let errorMessage = `Failed to clone voice. ElevenLabs API error: ${errorText}`;
       
-      if (!result.voice_id) {
-        throw new Error('Voice cloning completed but no voice ID was returned. Please try again.');
+      // Parse common ElevenLabs errors
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.detail) {
+          if (typeof errorJson.detail === 'string') {
+            errorMessage = errorJson.detail;
+          } else if (errorJson.detail.message) {
+            errorMessage = errorJson.detail.message;
+          }
+        }
+      } catch (e) {
+        // Keep original error message if parsing fails
       }
-
-      return { 
-        voiceId: result.voice_id, 
-        message: 'Voice cloned successfully! You can now use this voice in the chat interface.' 
-      };
-    } catch (error) {
-      // Re-throw with more user-friendly error messages
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
-      throw new Error('An unexpected error occurred during voice cloning. Please try again.');
+      
+      throw new Error(errorMessage);
     }
+
+    const result = await elevenLabsResponse.json();
+    
+    if (!result.voice_id) {
+      throw new Error('Voice cloning completed but no voice ID was returned. Please try again.');
+    }
+
+    return { 
+      voiceId: result.voice_id, 
+      message: 'Voice cloned successfully with ElevenLabs! You can now use this voice in the chat interface.' 
+    };
+  } catch (error) {
+    // Re-throw with more user-friendly error messages
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error('An unexpected error occurred during voice cloning. Please try again.');
   }
-);
+}

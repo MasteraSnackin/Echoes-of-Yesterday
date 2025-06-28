@@ -104,6 +104,8 @@ const voiceSchema = z.object({
   audioDataUri: z.string().min(1, "Audio data cannot be empty."),
   fileName: z.string().min(1, "File name cannot be empty."),
   apiKey: z.string().min(1, "ElevenLabs API key is required."),
+  voiceName: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export async function cloneVoiceAction(input: CloneVoiceInput) {

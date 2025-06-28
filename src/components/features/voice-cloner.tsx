@@ -11,7 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Mic, CheckCircle2, AlertTriangle, Volume2 } from 'lucide-react';
+import { Loader2, Mic, CheckCircle2, AlertTriangle, Volume2, Upload, Info } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -27,6 +27,8 @@ const fileToDataUri = (file: File): Promise<string> => {
 export function VoiceCloner() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
+  const [voiceName, setVoiceName] = useState<string>('');
+  const [voiceDescription, setVoiceDescription] = useState<string>('');
   const [isCloning, setIsCloning] = useState(false);
   const { toast } = useToast();
 
@@ -50,21 +52,37 @@ export function VoiceCloner() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      // Validate file type
+      if (!file.type.startsWith('audio/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an audio file (MP3, WAV, etc.)",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
           description: "Please upload an audio file smaller than 10MB.",
           variant: "destructive"
         });
-        setAudioFile(null);
-        setAudioPreviewUrl(null);
         return;
       }
+
       setAudioFile(file);
       setAudioPreviewUrl(URL.createObjectURL(file));
+      
+      // Auto-generate voice name from filename if not set
+      if (!voiceName) {
+        const nameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
+        setVoiceName(nameWithoutExtension);
+      }
     } else {
-        setAudioFile(null);
-        setAudioPreviewUrl(null);
+      setAudioFile(null);
+      setAudioPreviewUrl(null);
     }
   };
 
@@ -75,32 +93,61 @@ export function VoiceCloner() {
     }
     if (!apiKey) {
       toast({
-        title: "API Key Missing",
-        description: "Please add your ElevenLabs API key on the Account page.",
+        title: "ElevenLabs API Key Missing",
+        description: (
+          <p>
+            Please add your ElevenLabs API key on the{' '}
+            <Link href="/dashboard/account" className="underline font-bold">
+              Account
+            </Link>{' '}
+            page.
+          </p>
+        ),
         variant: "destructive",
       });
       return;
     }
 
     setIsCloning(true);
-    const audioDataUri = await fileToDataUri(audioFile);
+    
+    try {
+      const audioDataUri = await fileToDataUri(audioFile);
 
-    const result = await cloneVoiceAction({
-      audioDataUri,
-      fileName: audioFile.name,
-      apiKey,
-    });
-    setIsCloning(false);
+      const result = await cloneVoiceAction({
+        audioDataUri,
+        fileName: audioFile.name,
+        apiKey,
+        voiceName: voiceName || `Voice Clone ${new Date().toLocaleDateString()}`,
+        description: voiceDescription || 'A voice cloned for Echoes of Yesterday',
+      });
 
-    if (result.success && result.data?.voiceId) {
-      setClonedVoiceId(result.data.voiceId);
-      toast({ title: "Voice Cloned Successfully", description: `New voice ID: ${result.data.voiceId}` });
-    } else {
+      if (result.success && result.data?.voiceId) {
+        setClonedVoiceId(result.data.voiceId);
+        toast({ 
+          title: "Voice Cloned Successfully!", 
+          description: result.data.message 
+        });
+        
+        // Clear form
+        setAudioFile(null);
+        setAudioPreviewUrl(null);
+        setVoiceName('');
+        setVoiceDescription('');
+      } else {
+        toast({
+          title: "Voice Cloning Failed",
+          description: typeof result.error === 'string' ? result.error : "An unknown error occurred.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Cloning Failed",
-        description: typeof result.error === 'string' ? result.error : "An unknown error occurred.",
+        title: "Voice Cloning Failed",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsCloning(false);
     }
   };
 
@@ -136,91 +183,156 @@ export function VoiceCloner() {
     }
   };
 
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-headline text-2xl">Create a Voice Clone</CardTitle>
-        <CardDescription>
-          Upload a clear audio sample (MP3, WAV) of at least one minute. The voice will be used to generate audio in the chat.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {!apiKey && (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl">Create a Voice Clone</CardTitle>
+          <CardDescription>
+            Upload a clear audio sample to create a realistic voice clone using ElevenLabs technology.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {!apiKey && (
             <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>ElevenLabs API Key Not Found</AlertTitle>
-                <AlertDescription>
-                Please go to the <Link href="/dashboard/account" className="font-bold underline">Account</Link> page to add your API key.
-                </AlertDescription>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>ElevenLabs API Key Required</AlertTitle>
+              <AlertDescription>
+                Please go to the <Link href="/dashboard/account" className="font-bold underline">Account</Link> page to add your ElevenLabs API key.
+              </AlertDescription>
             </Alert>
-        )}
+          )}
 
-        {hydratedVoiceId && (
           <Alert>
-            <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>Active Voice Clone Ready</AlertTitle>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Voice Cloning Tips</AlertTitle>
             <AlertDescription>
-              An active voice clone is ready to be used in the chat. You can create a new one below, or test the active one.
-              <p className="font-mono text-xs bg-muted p-2 rounded-md mt-2 break-all">ID: {hydratedVoiceId}</p>
+              <ul className="list-disc list-inside space-y-1 text-sm mt-2">
+                <li>Use high-quality audio (at least 1 minute recommended)</li>
+                <li>Ensure clear speech with minimal background noise</li>
+                <li>Single speaker only - no music or other voices</li>
+                <li>Supported formats: MP3, WAV, M4A, FLAC</li>
+              </ul>
             </AlertDescription>
           </Alert>
-        )}
 
-        <div className="space-y-2">
-          <Label htmlFor="audio-upload">Audio File for Cloning</Label>
-          <Input id="audio-upload" type="file" accept="audio/mpeg,audio/wav" onChange={handleFileChange} disabled={!apiKey || isCloning}/>
-          {audioFile && <p className="text-sm text-muted-foreground">Selected: {audioFile.name}</p>}
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="voice-name">Voice Name</Label>
+            <Input 
+              id="voice-name"
+              value={voiceName}
+              onChange={(e) => setVoiceName(e.target.value)}
+              placeholder="Enter a name for this voice..."
+              disabled={isCloning}
+            />
+          </div>
 
-        {audioPreviewUrl && (
+          <div className="space-y-2">
+            <Label htmlFor="voice-description">Description (Optional)</Label>
+            <Textarea 
+              id="voice-description"
+              value={voiceDescription}
+              onChange={(e) => setVoiceDescription(e.target.value)}
+              placeholder="Describe this voice..."
+              className="min-h-[80px]"
+              disabled={isCloning}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="audio-upload">Audio File</Label>
+            <Input 
+              id="audio-upload" 
+              type="file" 
+              accept="audio/*" 
+              onChange={handleFileChange} 
+              disabled={!apiKey || isCloning}
+            />
+            {audioFile && (
+              <p className="text-sm text-muted-foreground">
+                Selected: {audioFile.name} ({(audioFile.size / 1024 / 1024).toFixed(2)} MB)
+              </p>
+            )}
+          </div>
+
+          {audioPreviewUrl && (
             <div className="space-y-2">
-                <Label>Playback Uploaded File</Label>
-                <audio controls src={audioPreviewUrl} className="w-full">
-                    Your browser does not support the audio element.
+              <Label>Preview Audio</Label>
+              <audio controls src={audioPreviewUrl} className="w-full">
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button 
+            onClick={handleClone} 
+            disabled={isCloning || !audioFile || !apiKey || !voiceName.trim()}
+            className="w-full"
+          >
+            {isCloning ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 h-4 w-4" />
+            )}
+            {isCloning ? 'Cloning Voice...' : 'Clone Voice'}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {hydratedVoiceId && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <CardTitle className="font-headline text-xl">Active Voice Clone</CardTitle>
+            </div>
+            <CardDescription>
+              Test your cloned voice by generating speech from text.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-3 bg-muted rounded-md">
+              <p className="text-sm font-medium">Voice ID:</p>
+              <p className="font-mono text-xs break-all text-muted-foreground">{hydratedVoiceId}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="test-text">Test Text</Label>
+              <Textarea
+                id="test-text"
+                value={testText}
+                onChange={(e) => setTestText(e.target.value)}
+                placeholder="Enter text to generate audio..."
+                className="min-h-[100px]"
+                disabled={isTesting}
+              />
+            </div>
+
+            <Button 
+              onClick={handleTestVoice} 
+              disabled={isTesting || !apiKey || !testText.trim()}
+              className="w-full"
+            >
+              {isTesting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Volume2 className="mr-2 h-4 w-4" />
+              )}
+              {isTesting ? 'Generating...' : 'Generate Test Audio'}
+            </Button>
+
+            {testAudioUri && (
+              <div className="space-y-2">
+                <Label>Generated Audio</Label>
+                <audio controls src={testAudioUri} className="w-full">
+                  Your browser does not support the audio element.
                 </audio>
-            </div>
-        )}
-
-        {hydratedVoiceId && (
-            <div className="space-y-4 pt-6 mt-6 border-t">
-                <h3 className="font-semibold text-xl font-headline">Test Your Cloned Voice</h3>
-                <p className="text-sm text-muted-foreground">
-                    Use this tool to test your active voice clone by providing text and generating an audio sample.
-                </p>
-                <div className="space-y-2">
-                    <Label htmlFor="test-text">Text to Speak</Label>
-                    <Textarea
-                        id="test-text"
-                        value={testText}
-                        onChange={(e) => setTestText(e.target.value)}
-                        placeholder="Enter text to generate audio..."
-                        className="min-h-[100px]"
-                        disabled={isTesting}
-                    />
-                </div>
-                <Button onClick={handleTestVoice} disabled={isTesting || !apiKey || !testText.trim()}>
-                    {isTesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
-                    Generate Test Audio
-                </Button>
-                {testAudioUri && (
-                    <div className="pt-4 space-y-2">
-                         <Label>Test Result</Label>
-                        <audio controls src={testAudioUri} className="w-full">
-                            Your browser does not support the audio element.
-                        </audio>
-                    </div>
-                )}
-            </div>
-        )}
-
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleClone} disabled={isCloning || !audioFile || !apiKey}>
-          {isCloning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mic className="mr-2 h-4 w-4" />}
-          {hydratedVoiceId ? "Create New Voice Clone" : "Create Voice Clone"}
-        </Button>
-      </CardFooter>
-    </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

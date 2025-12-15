@@ -128,3 +128,7 @@ Client-side state is managed using [Zustand](https://github.com/pmndrs/zustand),
 - `src/lib/store/voice.ts`: Stores the ID of the cloned voice.
 
 The custom hook `useHydratedStore` (`src/hooks/use-hydrated-store.ts`) is used to safely access these persisted stores on the client, preventing server-client hydration mismatches.
+
+
+## Badge Progress
+- Working on GitHub badges
